@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Panel RRHH</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <style>
+        .card:hover {
+            transform: translateY(-5px);
+            transition: 0.3s;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+<div class="container-fluid mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded shadow-sm">
+        <div>
+            <h3 class="mb-0">🏢 Sistema de Gestión RRHH</h3>
+            <small class="text-muted">Panel de Control</small>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-end">
+                <strong>👤 <span th:text="${empleado.nombre}"></span></strong><br>
+                <span class="badge bg-secondary" th:text="${empleado.rol}"></span>
+            </div>
+            <a href="/logout" class="btn btn-outline-danger btn-sm">
+                Cerrar sesión
+            </a>
+        </div>
+    </div>
+
+    <!-- MENÚ DE OPCIONES SEGÚN ROL -->
+    <div class="row g-4">
+
+        <!-- ========== EMPLEADO ========== -->
+        <div th:if="${empleado.rol == T(com.example.demo.model.Rol).EMPLEADO}">
+        <div class="row g-4">
+
+                <!-- Marcar Asistencia -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">⏱</div>
+                            <h5>Asistencia</h5>
+                            <p class="text-muted">Marcar entrada/salida</p>
+                            <a th:href="@{/asistencia(pin=${empleado.pin})}"
+                               class="btn btn-primary">
+                                Ir al registro
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Solicitar Permiso -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">📄</div>
+                            <h5>Permisos</h5>
+                            <p class="text-muted">Solicitar permisos</p>
+                            <a href="/permisos" class="btn btn-info">
+                                Gestionar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Solicitar Vacaciones -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">🏖️</div>
+                            <h5>Vacaciones</h5>
+                            <p class="text-muted">Solicitar vacaciones</p>
+                            <a href="/vacaciones" class="btn btn-success">
+                                Gestionar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mi Código QR -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">📱</div>
+                            <h5>Mi Código QR</h5>
+                            <p class="text-muted">Descargar mi QR</p>
+                            <a th:href="@{/api/qr/generar(pin=${empleado.pin})}"
+                               class="btn btn-dark"
+                               download="mi-qr.png">
+                                Descargar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ========== RRHH ========== -->
+        <div th:if="${empleado.rol == T(com.example.demo.model.Rol).RRHH}">
+
+        <div class="row g-4">
+
+                <!-- Gestionar Empleados -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">👥</div>
+                            <h5>Empleados</h5>
+                            <p class="text-muted">Gestionar empleados</p>
+                            <a href="/empleados" class="btn btn-primary">
+                                Ver todos
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aprobar Permisos -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">✅</div>
+                            <h5>Permisos Pendientes</h5>
+                            <p class="text-muted">Aprobar/Rechazar</p>
+                            <a href="/permisos/pendientes" class="btn btn-warning">
+                                Revisar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aprobar Vacaciones -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">🗓️</div>
+                            <h5>Vacaciones Pendientes</h5>
+                            <p class="text-muted">Aprobar/Rechazar</p>
+                            <a href="/vacaciones/pendientes" class="btn btn-success">
+                                Revisar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reportes -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">📊</div>
+                            <h5>Reportes</h5>
+                            <p class="text-muted">Asistencias y nómina</p>
+                            <a href="/reportes" class="btn btn-secondary">
+                                Ver reportes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ========== ADMIN ========== -->
+        <div th:if="${empleado.rol == T(com.example.demo.model.Rol).ADMIN}">
+        <div class="row g-4">
+
+                <!-- Gestionar Empleados -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">👥</div>
+                            <h5>Empleados</h5>
+                            <p class="text-muted">CRUD completo</p>
+                            <a href="/empleados" class="btn btn-primary">
+                                Gestionar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gestionar Cargos -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">💼</div>
+                            <h5>Cargos</h5>
+                            <p class="text-muted">Gestionar cargos</p>
+                            <a href="/cargos" class="btn btn-info">
+                                Gestionar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gestionar Horarios -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">🕐</div>
+                            <h5>Horarios</h5>
+                            <p class="text-muted">Configurar horarios</p>
+                            <a href="/horarios" class="btn btn-warning">
+                                Gestionar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Power BI -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">📈</div>
+                            <h5>Dashboard</h5>
+                            <p class="text-muted">Análisis Power BI</p>
+                            <a href="/dashboard" class="btn btn-success">
+                                Ver análisis
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exportar Nómina -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">💰</div>
+                            <h5>Exportar Nómina</h5>
+                            <p class="text-muted">CSV para procesar</p>
+                            <a href="/api/nomina/exportar"
+                               class="btn btn-dark"
+                               download="nomina.csv">
+                                Descargar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Escanear QR -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 mb-3">📷</div>
+                            <h5>Escanear QR</h5>
+                            <p class="text-muted">Registrar asistencia</p>
+                            <a href="/escanear-qr" class="btn btn-primary">
+                                Escanear
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= CHATBOT FLOTANTE ================= -->
+<button id="chatbotBtn"
+        class="btn btn-primary rounded-circle shadow"
+        style="position: fixed; bottom: 20px; right: 20px;
+               width: 60px; height: 60px; z-index: 999;">
+    🤖
+</button>
+
+<div id="chatbotBox"
+     style="display:none;
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 350px;
+            height: 450px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 999;">
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color:white;
+                padding:15px;
+                border-radius:15px 15px 0 0;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;">
+        <span><strong>🤖 Asistente RRHH</strong></span>
+        <button onclick="toggleChat()"
+                style="background:none;border:none;color:white;font-size:20px;cursor:pointer;">
+            ✖
+        </button>
+    </div>
+
+    <!-- Body -->
+    <div id="chatBody"
+         style="padding:15px;height:320px;overflow-y:auto;background:#f8f9fa;">
+        <div class="alert alert-info mb-2" style="font-size:13px;">
+            👋 ¡Hola! Pregúntame sobre tardanzas, horas extra, permisos o vacaciones.
+        </div>
+    </div>
+
+    <!-- Input -->
+    <div style="padding:15px;border-top:2px solid #eee;background:white;border-radius:0 0 15px 15px;">
+        <div class="input-group">
+            <input type="text"
+                   id="chatInput"
+                   class="form-control"
+                   placeholder="Escribe tu consulta..."
+                   onkeypress="if(event.key==='Enter') enviarMensaje()">
+            <button class="btn btn-primary"
+                    onclick="enviarMensaje()">
+                Enviar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleChat() {
+        const chat = document.getElementById("chatbotBox");
+        chat.style.display = chat.style.display === "none" ? "block" : "none";
+    }
+
+    document.getElementById("chatbotBtn")
+        .addEventListener("click", toggleChat);
+
+    function enviarMensaje() {
+        const input = document.getElementById("chatInput");
+        const mensaje = input.value.trim();
+
+        if (!mensaje) return;
+
+        agregarMensaje(mensaje, "user");
+        input.value = "";
+
+        fetch("/api/chatbot/mensaje", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mensaje: mensaje })
+        })
+        .then(res => res.text())
+        .then(respuesta => {
+            agregarMensaje(respuesta, "bot");
+        })
+        .catch(() => {
+            agregarMensaje("⚠️ Error al conectar", "bot");
+        });
+    }
+
+    function agregarMensaje(texto, tipo) {
+        const chat = document.getElementById("chatBody");
+        const msg = document.createElement("div");
+
+        msg.style.marginBottom = "10px";
+        msg.style.padding = "10px 12px";
+        msg.style.borderRadius = "12px";
+        msg.style.maxWidth = "80%";
+        msg.style.fontSize = "14px";
+        msg.style.wordWrap = "break-word";
+
+        if (tipo === "user") {
+            msg.style.background = "#667eea";
+            msg.style.color = "white";
+            msg.style.marginLeft = "auto";
+            msg.innerText = texto;
+        } else {
+            msg.style.background = "#fff";
+            msg.style.color = "#333";
+            msg.style.border = "1px solid #ddd";
+            msg.style.marginRight = "auto";
+            msg.innerHTML = "🤖 " + texto;
+        }
+
+        chat.appendChild(msg);
+        chat.scrollTop = chat.scrollHeight;
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

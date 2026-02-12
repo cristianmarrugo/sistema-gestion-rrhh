@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Ingreso por PIN</title>
+    <link rel="stylesheet" href="/css/pin.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>🔐 Acceso por PIN</h2>
+        <p>Ingresa tu PIN para continuar</p>
+
+        <form action="/pin" method="post">
+            <input
+                    type="password"
+                    name="pin"
+                    placeholder="PIN"
+                    required
+                    maxlength="6"
+            >
+
+            <button type="submit">Ingresar</button>
+
+            <p th:if="${param.error}" style="color:red">
+                PIN incorrecto
+            </p>
+
+        </form>
+    </div>
+</div>
+
+</body>
+</html>
+

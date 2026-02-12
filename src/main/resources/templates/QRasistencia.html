@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Escanear QR - Asistencia</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4 class="mb-0">📷 Escanear QR para Asistencia</h4>
+                </div>
+
+                <div class="card-body">
+
+                    <!-- Área de escaneo -->
+                    <div id="reader" style="width: 100%; margin-bottom: 20px;"></div>
+
+                    <!-- Resultado -->
+                    <div id="resultado" class="alert d-none" role="alert"></div>
+
+                    <!-- Botón volver -->
+                    <div class="text-center mt-3">
+                        <a href="/index" class="btn btn-secondary">
+                            ← Volver al inicio
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configurar el lector de QR
+    const html5QrCode = new Html5Qrcode("reader");
+
+    const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 }
+    };
+
+    // Iniciar el escaneo
+    html5QrCode.start(
+        { facingMode: "environment" }, // Usar cámara trasera
+        config,
+        onScanSuccess,
+        onScanFailure
+    );
+
+    function onScanSuccess(decodedText, decodedResult) {
+        // Detener el escaneo
+        html5QrCode.stop();
+
+        // El QR contiene el PIN del empleado
+        const pin = decodedText;
+
+        // Enviar al backend
+        fetch('/api/qr/escanear', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ qrData: pin })
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Error al marcar asistencia');
+            }
+        })
+        .then(data => {
+            mostrarResultado(
+                '✅ Asistencia registrada correctamente',
+                'success',
+                data
+            );
+        })
+        .catch(error => {
+            mostrarResultado(
+                '❌ Error: ' + error.message,
+                'danger'
+            );
+
+            // Reiniciar escaneo después de 3 segundos
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+        });
+    }
+
+    function onScanFailure(error) {
+        // Ignorar errores de escaneo continuo
+    }
+
+    function mostrarResultado(mensaje, tipo, data) {
+        const resultado = document.getElementById('resultado');
+        resultado.className = `alert alert-${tipo}`;
+
+        let contenido = `<h5>${mensaje}</h5>`;
+
+        if (data) {
+            contenido += `
+                <hr>
+                <p><strong>Empleado:</strong> ${data.empleado.nombre} ${data.empleado.apellido}</p>
+                <p><strong>Fecha:</strong> ${data.fecha}</p>
+                <p><strong>Hora Entrada:</strong> ${data.horaEntrada || 'N/A'}</p>
+                <p><strong>Hora Salida:</strong> ${data.horaSalida || 'N/A'}</p>
+                <p><strong>Estado:</strong> <span class="badge bg-info">${data.estado}</span></p>
+            `;
+        }
+
+        resultado.innerHTML = contenido;
+        resultado.classList.remove('d-none');
+
+        // Reiniciar después de 5 segundos si fue exitoso
+        if (tipo === 'success') {
+            setTimeout(() => {
+                location.reload();
+            }, 5000);
+        }
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
