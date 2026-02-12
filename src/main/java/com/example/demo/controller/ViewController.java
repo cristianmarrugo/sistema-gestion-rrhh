@@ -58,13 +58,6 @@ public class ViewController {
 
     // Vistas pendientes de crear (placeholder)
 
-    @GetMapping("/empleados")
-    public String empleados(HttpSession session) {
-        if (session.getAttribute("empleado") == null) {
-            return "redirect:/pin";
-        }
-        return "empleados"; // Crear vista
-    }
 
     @GetMapping("/cargos")
     public String cargos(HttpSession session) {
