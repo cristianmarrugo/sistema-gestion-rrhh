@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Gestión de Horarios</title>
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <style>
+    .horario-card {
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    .horario-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+    .empleado-badge {
+        margin: 3px;
+        font-size: 0.85rem;
+    }
+    .sin-horario-box {
+        border: 2px dashed #dc3545;
+        border-radius: 10px;
+        padding: 15px;
+        background: #fff5f5;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid mt-4">
+
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="mb-0">🕐 Gestión de Horarios y Turnos</h3>
+      <small class="text-muted">Administrar horarios base y asignar empleados</small>
+    </div>
+    <div>
+      <a href="/index" class="btn btn-outline-secondary">
+        ← Volver al inicio
+      </a>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div id="alertContainer"></div>
+
+  <!-- BOTONES PRINCIPALES -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <button class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalHorario" onclick="abrirModalCrear()">
+        ➕ Crear Nuevo Horario
+      </button>
+    </div>
+    <div class="col-md-6">
+      <button class="btn btn-warning btn-lg w-100" onclick="mostrarSeccionAsignacion()">
+        👥 Asignar Empleados a Horarios
+      </button>
+    </div>
+  </div>
+
+  <!-- SECCIÓN: LISTA DE HORARIOS -->
+  <div id="seccionHorarios">
+    <h5 class="mb-3">📋 Horarios Disponibles</h5>
+    <div class="row" id="listaHorarios">
+      <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-2 text-muted">Cargando horarios...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN: ASIGNAR EMPLEADOS (OCULTA INICIALMENTE) -->
+  <div id="seccionAsignacion" style="display: none;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">👥 Asignar Empleados a Horarios</h5>
+      <button class="btn btn-outline-secondary" onclick="mostrarSeccionHorarios()">
+        ← Volver a horarios
+      </button>
+    </div>
+
+    <!-- Empleados sin horario -->
+    <div class="sin-horario-box mb-4">
+      <h6 class="text-danger">⚠️ Empleados sin horario asignado (<span id="countSinHorario">0</span>)</h6>
+      <div id="empleadosSinHorario" class="mt-2">
+        <small class="text-muted">Cargando...</small>
+      </div>
+    </div>
+
+    <!-- Empleados por horario -->
+    <div id="empleadosPorHorario">
+      <small class="text-muted">Cargando...</small>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL CREAR/EDITAR HORARIO -->
+<div class="modal fade" id="modalHorario" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitulo">➕ Crear Horario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formHorario">
+          <input type="hidden" id="horarioId">
+
+          <div class="mb-3">
+            <label for="horaEntrada" class="form-label">Hora de Entrada *</label>
+            <input type="time" class="form-control" id="horaEntrada" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="horaSalida" class="form-label">Hora de Salida *</label>
+            <input type="time" class="form-control" id="horaSalida" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="toleranciaMinutos" class="form-label">Tolerancia (minutos) *</label>
+            <input type="number"
+                   class="form-control"
+                   id="toleranciaMinutos"
+                   min="0"
+                   max="60"
+                   value="15"
+                   required>
+            <small class="text-muted">Tiempo de gracia antes de marcar tardanza</small>
+          </div>
+
+          <div class="alert alert-info">
+            <strong>Ejemplo:</strong> Si el horario es 08:00 y la tolerancia es 15 minutos,
+            el empleado puede llegar hasta las 08:15 sin ser marcado como tarde.
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" onclick="guardarHorario()">
+          <span id="btnTexto">Guardar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ELIMINAR HORARIO -->
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">⚠️ Confirmar Eliminación</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de eliminar este horario?</p>
+        <p class="text-danger">
+          <small>⚠️ Los empleados asignados a este horario quedarán sin horario.</small>
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" onclick="confirmarEliminar()">
+          Sí, Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ASIGNAR HORARIO A EMPLEADO -->
+<div class="modal fade" id="modalAsignar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">👤 Asignar Horario a <span id="empleadoNombre"></span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="empleadoIdAsignar">
+        <label for="horarioAsignar" class="form-label">Seleccionar Horario:</label>
+        <select class="form-select" id="horarioAsignar">
+          <option value="">Sin horario</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" onclick="confirmarAsignacion()">
+          Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  let modalHorario;
+  let modalEliminar;
+  let modalAsignar;
+  let horarioIdEliminar;
+  let todosLosHorarios = [];
+  let todosLosEmpleados = [];
+
+  document.addEventListener('DOMContentLoaded', function() {
+      modalHorario = new bootstrap.Modal(document.getElementById('modalHorario'));
+      modalEliminar = new bootstrap.Modal(document.getElementById('modalEliminar'));
+      modalAsignar = new bootstrap.Modal(document.getElementById('modalAsignar'));
+      cargarHorarios();
+  });
+
+  // ==================== CARGAR HORARIOS ====================
+  function cargarHorarios() {
+      Promise.all([
+          fetch('/api/horarios').then(r => r.json()),
+          fetch('/api/empleados').then(r => r.json())
+      ])
+      .then(([horarios, empleados]) => {
+          todosLosHorarios = horarios;
+          todosLosEmpleados = empleados;
+          renderizarHorarios();
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          mostrarAlerta('Error al cargar los datos', 'danger');
+      });
+  }
+
+  // ==================== RENDERIZAR HORARIOS ====================
+  function renderizarHorarios() {
+      const container = document.getElementById('listaHorarios');
+
+      if (todosLosHorarios.length === 0) {
+          container.innerHTML = `
+              <div class="col-12 text-center py-5">
+                  <p class="text-muted">📦 No hay horarios creados</p>
+                  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalHorario" onclick="abrirModalCrear()">
+                      Crear Primer Horario
+                  </button>
+              </div>
+          `;
+          return;
+      }
+
+      container.innerHTML = todosLosHorarios.map(horario => {
+          const empleadosEnHorario = todosLosEmpleados.filter(e =>
+              e.horario && e.horario.id === horario.id
+          );
+
+          return `
+              <div class="col-md-4 mb-3">
+                  <div class="card horario-card shadow-sm h-100">
+                      <div class="card-body">
+                          <div class="d-flex justify-content-between align-items-start mb-3">
+                              <div>
+                                  <h5 class="card-title">🕐 ${horario.horaEntrada} - ${horario.horaSalida}</h5>
+                                  <small class="text-muted">Tolerancia: ${horario.toleranciaMinutos} min</small>
+                              </div>
+                              <div>
+                                  <button class="btn btn-sm btn-warning me-1"
+                                          onclick='abrirModalEditar(${JSON.stringify(horario)})'
+                                          title="Editar">
+                                      ✏️
+                                  </button>
+                                  <button class="btn btn-sm btn-danger"
+                                          onclick="abrirModalEliminar(${horario.id})"
+                                          title="Eliminar">
+                                      🗑️
+                                  </button>
+                              </div>
+                          </div>
+
+                          <hr>
+
+                          <div>
+                              <strong>👥 Empleados asignados: ${empleadosEnHorario.length}</strong>
+                              <div class="mt-2">
+                                  ${empleadosEnHorario.length > 0 ?
+                                      empleadosEnHorario.slice(0, 5).map(e =>
+                                          `<span class="badge bg-secondary empleado-badge">${e.nombre} ${e.apellido}</span>`
+                                      ).join('') +
+                                      (empleadosEnHorario.length > 5 ?
+                                          `<span class="badge bg-info empleado-badge">+${empleadosEnHorario.length - 5} más</span>`
+                                          : ''
+                                      )
+                                      : '<small class="text-muted">Sin empleados asignados</small>'
+                                  }
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          `;
+      }).join('');
+  }
+
+  // ==================== MODAL CREAR ====================
+  function abrirModalCrear() {
+      document.getElementById('modalTitulo').textContent = '➕ Crear Horario';
+      document.getElementById('btnTexto').textContent = 'Guardar';
+      document.getElementById('formHorario').reset();
+      document.getElementById('horarioId').value = '';
+      document.getElementById('toleranciaMinutos').value = '15';
+  }
+
+  // ==================== MODAL EDITAR ====================
+  function abrirModalEditar(horario) {
+      document.getElementById('modalTitulo').textContent = '✏️ Editar Horario';
+      document.getElementById('btnTexto').textContent = 'Actualizar';
+      document.getElementById('horarioId').value = horario.id;
+      document.getElementById('horaEntrada').value = horario.horaEntrada;
+      document.getElementById('horaSalida').value = horario.horaSalida;
+      document.getElementById('toleranciaMinutos').value = horario.toleranciaMinutos;
+      modalHorario.show();
+  }
+
+  // ==================== GUARDAR HORARIO ====================
+  function guardarHorario() {
+      const id = document.getElementById('horarioId').value;
+
+      const horario = {
+          horaEntrada: document.getElementById('horaEntrada').value,
+          horaSalida: document.getElementById('horaSalida').value,
+          toleranciaMinutos: parseInt(document.getElementById('toleranciaMinutos').value)
+      };
+
+      const url = id ? `/api/horarios/${id}` : '/api/horarios';
+      const method = id ? 'PUT' : 'POST';
+
+      fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(horario)
+      })
+      .then(response => {
+          if (response.ok) {
+              return response.json();
+          }
+          throw new Error('Error al guardar');
+      })
+      .then(() => {
+          modalHorario.hide();
+          cargarHorarios();
+          mostrarAlerta(
+              id ? 'Horario actualizado correctamente' : 'Horario creado correctamente',
+              'success'
+          );
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          mostrarAlerta('Error al guardar el horario', 'danger');
+      });
+  }
+
+  // ==================== ELIMINAR HORARIO ====================
+  function abrirModalEliminar(id) {
+      horarioIdEliminar = id;
+      modalEliminar.show();
+  }
+
+  function confirmarEliminar() {
+      fetch(`/api/horarios/${horarioIdEliminar}`, {
+          method: 'DELETE'
+      })
+      .then(response => {
+          if (response.ok) {
+              modalEliminar.hide();
+              cargarHorarios();
+              mostrarAlerta('Horario eliminado correctamente', 'success');
+          } else {
+              throw new Error('Error al eliminar');
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          mostrarAlerta('Error al eliminar el horario', 'danger');
+      });
+  }
+
+  // ==================== SECCIÓN ASIGNACIÓN ====================
+  function mostrarSeccionAsignacion() {
+      document.getElementById('seccionHorarios').style.display = 'none';
+      document.getElementById('seccionAsignacion').style.display = 'block';
+      cargarAsignaciones();
+  }
+
+  function mostrarSeccionHorarios() {
+      document.getElementById('seccionAsignacion').style.display = 'none';
+      document.getElementById('seccionHorarios').style.display = 'block';
+  }
+
+  function cargarAsignaciones() {
+      // Empleados sin horario
+      const sinHorario = todosLosEmpleados.filter(e => !e.horario && e.activo);
+      document.getElementById('countSinHorario').textContent = sinHorario.length;
+
+      const containerSinHorario = document.getElementById('empleadosSinHorario');
+      if (sinHorario.length === 0) {
+          containerSinHorario.innerHTML = '<small class="text-success">✅ Todos los empleados tienen horario asignado</small>';
+      } else {
+          containerSinHorario.innerHTML = sinHorario.map(e => `
+              <button class="btn btn-sm btn-outline-danger empleado-badge"
+                      onclick="abrirModalAsignar(${e.id}, '${e.nombre} ${e.apellido}')">
+                  ${e.nombre} ${e.apellido} →
+              </button>
+          `).join('');
+      }
+
+      // Empleados por horario
+      const containerPorHorario = document.getElementById('empleadosPorHorario');
+      containerPorHorario.innerHTML = todosLosHorarios.map(horario => {
+          const empleados = todosLosEmpleados.filter(e =>
+              e.horario && e.horario.id === horario.id && e.activo
+          );
+
+          return `
+              <div class="card mb-3">
+                  <div class="card-header bg-light">
+                      <strong>🕐 ${horario.horaEntrada} - ${horario.horaSalida}</strong>
+                      <span class="badge bg-primary float-end">${empleados.length} empleados</span>
+                  </div>
+                  <div class="card-body">
+                      ${empleados.length > 0 ?
+                          empleados.map(e => `
+                              <button class="btn btn-sm btn-outline-primary empleado-badge"
+                                      onclick="abrirModalAsignar(${e.id}, '${e.nombre} ${e.apellido}')">
+                                  ${e.nombre} ${e.apellido}
+                              </button>
+                          `).join('')
+                          : '<small class="text-muted">Sin empleados asignados</small>'
+                      }
+                  </div>
+              </div>
+          `;
+      }).join('');
+  }
+
+  // ==================== ASIGNAR HORARIO A EMPLEADO ====================
+  function abrirModalAsignar(empleadoId, nombre) {
+      document.getElementById('empleadoIdAsignar').value = empleadoId;
+      document.getElementById('empleadoNombre').textContent = nombre;
+
+      const select = document.getElementById('horarioAsignar');
+      select.innerHTML = '<option value="">Sin horario</option>';
+      todosLosHorarios.forEach(h => {
+          select.innerHTML += `<option value="${h.id}">${h.horaEntrada} - ${h.horaSalida}</option>`;
+      });
+
+      // Pre-seleccionar horario actual
+      const empleado = todosLosEmpleados.find(e => e.id === empleadoId);
+      if (empleado && empleado.horario) {
+          select.value = empleado.horario.id;
+      }
+
+      modalAsignar.show();
+  }
+
+  function confirmarAsignacion() {
+      const empleadoId = document.getElementById('empleadoIdAsignar').value;
+      const horarioId = document.getElementById('horarioAsignar').value;
+
+      const empleado = todosLosEmpleados.find(e => e.id == empleadoId);
+      empleado.horario = horarioId ? { id: parseInt(horarioId) } : null;
+
+      fetch(`/api/empleados/${empleadoId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(empleado)
+      })
+      .then(response => {
+          if (response.ok) {
+              modalAsignar.hide();
+              cargarHorarios();
+              setTimeout(() => mostrarSeccionAsignacion(), 200);
+              mostrarAlerta('Horario asignado correctamente', 'success');
+          } else {
+              throw new Error('Error al asignar');
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          mostrarAlerta('Error al asignar el horario', 'danger');
+      });
+  }
+
+  // ==================== UTILIDADES ====================
+  function mostrarAlerta(mensaje, tipo) {
+      const alertContainer = document.getElementById('alertContainer');
+      const alerta = document.createElement('div');
+      alerta.className = `alert alert-${tipo} alert-dismissible fade show`;
+      alerta.innerHTML = `
+          ${mensaje}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      alertContainer.appendChild(alerta);
+      setTimeout(() => alerta.remove(), 5000);
+  }
+</script>
+
+</body>
+</html>
