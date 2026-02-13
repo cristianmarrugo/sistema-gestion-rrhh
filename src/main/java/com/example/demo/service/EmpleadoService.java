@@ -66,6 +66,8 @@ public class EmpleadoService {
                     empleado.setRol(empleadoActualizado.getRol());
                     empleado.setFechaIngreso(empleadoActualizado.getFechaIngreso());
                     empleado.setCargo(empleadoActualizado.getCargo());
+
+                    // Horario puede ser null (opcional)
                     empleado.setHorario(empleadoActualizado.getHorario());
 
                     return empleadoRepository.save(empleado);
@@ -83,13 +85,13 @@ public class EmpleadoService {
                 .orElse(false);
     }
 
-    // Generar PIN único de 6 dígitos
+    // Generar PIN único de 4 dígitos
     private String generarPinUnico() {
         SecureRandom random = new SecureRandom();
         String pin;
 
         do {
-            pin = String.format("%06d", random.nextInt(1000000));
+            pin = String.format("%04d", random.nextInt(1000000));
         } while (empleadoRepository.findByPin(pin).isPresent());
 
         return pin;
