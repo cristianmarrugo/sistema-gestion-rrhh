@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Gestión de Cargos</title>
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <style>
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+        cursor: pointer;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid mt-4">
+
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="mb-0">💼 Gestión de Cargos</h3>
+      <small class="text-muted">Administrar cargos y salarios</small>
+    </div>
+    <div>
+      <a href="/index" class="btn btn-outline-secondary">
+        ← Volver al inicio
+      </a>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div id="alertContainer"></div>
+
+  <!-- BOTÓN CREAR NUEVO CARGO -->
+  <div class="mb-3">
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCargo" onclick="abrirModalCrear()">
+      ➕ Crear Nuevo Cargo
+    </button>
+  </div>
+
+  <!-- TABLA DE CARGOS -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">📋 Lista de Cargos</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+          <tr>
+            <th width="10%">ID</th>
+            <th width="40%">Nombre del Cargo</th>
+            <th width="30%">Salario Base</th>
+            <th width="20%" class="text-center">Acciones</th>
+          </tr>
+          </thead>
+          <tbody id="tablaCargos">
+          <tr>
+            <td colspan="4" class="text-center py-5 text-muted">
+              <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+              <p class="mt-2">Cargando cargos...</p>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL CREAR/EDITAR CARGO -->
+<div class="modal fade" id="modalCargo" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitulo">➕ Crear Cargo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formCargo">
+          <input type="hidden" id="cargoId">
+
+          <div class="mb-3">
+            <label for="nombre" class="form-label">Nombre del Cargo *</label>
+            <input type="text"
+                   class="form-control"
+                   id="nombre"
+                   placeholder="Ej: Gerente de Ventas"
+                   required>
+          </div>
+
+          <div class="mb-3">
+            <label for="salarioBase" class="form-label">Salario Base (COP) *</label>
+            <input type="number"
+                   class="form-control"
+                   id="salarioBase"
+                   placeholder="Ej: 3000000"
+                   step="1000"
+                   min="0"
+                   required>
+            <small class="text-muted">Salario mensual en pesos colombianos</small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" onclick="guardarCargo()">
+          <span id="btnTexto">Guardar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR ELIMINACIÓN -->
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">⚠️ Confirmar Eliminación</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que deseas eliminar el cargo <strong id="cargoEliminarNombre"></strong>?</p>
+        <p class="text-danger">
+          <small>⚠️ Esta acción no se puede deshacer. Los empleados con este cargo quedarán sin cargo asignado.</small>
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" onclick="confirmarEliminar()">
+          Sí, Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  let modalCargo;
+  let modalEliminar;
+  let cargoIdEliminar;
+
+  // Inicializar al cargar la página
+  document.addEventListener('DOMContentLoaded', function() {
+      modalCargo = new bootstrap.Modal(document.getElementById('modalCargo'));
+      modalEliminar = new bootstrap.Modal(document.getElementById('modalEliminar'));
+      cargarCargos();
+  });
+
+  // ==================== CARGAR CARGOS ====================
+  function cargarCargos() {
+      fetch('/api/cargos')
+          .then(response => response.json())
+          .then(cargos => {
+              const tbody = document.getElementById('tablaCargos');
+
+              if (cargos.length === 0) {
+                  tbody.innerHTML = `
+                      <tr>
+                          <td colspan="4" class="text-center py-5 text-muted">
+                              📦 No hay cargos registrados
+                          </td>
+                      </tr>
+                  `;
+                  return;
+              }
+
+              tbody.innerHTML = cargos.map(cargo => `
+                  <tr>
+                      <td>${cargo.id}</td>
+                      <td><strong>${cargo.nombre}</strong></td>
+                      <td>
+                          <span class="badge bg-success fs-6">
+                              $${formatearNumero(cargo.salarioBase)} COP
+                          </span>
+                      </td>
+                      <td class="text-center">
+                          <button class="btn btn-sm btn-warning me-1"
+                                  onclick="abrirModalEditar(${cargo.id}, '${escapeHtml(cargo.nombre)}', ${cargo.salarioBase})"
+                                  title="Editar">
+                              ✏️
+                          </button>
+                          <button class="btn btn-sm btn-danger"
+                                  onclick="abrirModalEliminar(${cargo.id}, '${escapeHtml(cargo.nombre)}')"
+                                  title="Eliminar">
+                              🗑️
+                          </button>
+                      </td>
+                  </tr>
+              `).join('');
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              mostrarAlerta('Error al cargar los cargos', 'danger');
+          });
+  }
+
+  // ==================== ABRIR MODAL CREAR ====================
+  function abrirModalCrear() {
+      document.getElementById('modalTitulo').textContent = '➕ Crear Cargo';
+      document.getElementById('btnTexto').textContent = 'Guardar';
+      document.getElementById('formCargo').reset();
+      document.getElementById('cargoId').value = '';
+  }
+
+  // ==================== ABRIR MODAL EDITAR ====================
+  function abrirModalEditar(id, nombre, salario) {
+      document.getElementById('modalTitulo').textContent = '✏️ Editar Cargo';
+      document.getElementById('btnTexto').textContent = 'Actualizar';
+      document.getElementById('cargoId').value = id;
+      document.getElementById('nombre').value = nombre;
+      document.getElementById('salarioBase').value = salario;
+      modalCargo.show();
+  }
+
+  // ==================== GUARDAR CARGO (CREAR/ACTUALIZAR) ====================
+  function guardarCargo() {
+      const id = document.getElementById('cargoId').value;
+      const nombre = document.getElementById('nombre').value.trim();
+      const salarioBase = parseFloat(document.getElementById('salarioBase').value);
+
+      if (!nombre || !salarioBase || salarioBase <= 0) {
+          mostrarAlerta('Por favor completa todos los campos correctamente', 'warning');
+          return;
+      }
+
+      const cargo = {
+          nombre: nombre,
+          salarioBase: salarioBase
+      };
+
+      const url = id ? `/api/cargos/${id}` : '/api/cargos';
+      const method = id ? 'PUT' : 'POST';
+
+      fetch(url, {
+          method: method,
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(cargo)
+      })
+      .then(response => {
+          if (response.ok) {
+              return response.json();
+          }
+          throw new Error('Error al guardar');
+      })
+      .then(() => {
+          modalCargo.hide();
+          cargarCargos();
+          mostrarAlerta(
+              id ? 'Cargo actualizado correctamente' : 'Cargo creado correctamente',
+              'success'
+          );
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          mostrarAlerta('Error al guardar el cargo', 'danger');
+      });
+  }
+
+  // ==================== ABRIR MODAL ELIMINAR ====================
+  function abrirModalEliminar(id, nombre) {
+      cargoIdEliminar = id;
+      document.getElementById('cargoEliminarNombre').textContent = nombre;
+      modalEliminar.show();
+  }
+
+  // ==================== CONFIRMAR ELIMINACIÓN ====================
+  function confirmarEliminar() {
+      fetch(`/api/cargos/${cargoIdEliminar}`, {
+          method: 'DELETE'
+      })
+      .then(response => {
+          if (response.ok) {
+              modalEliminar.hide();
+              cargarCargos();
+              mostrarAlerta('Cargo eliminado correctamente', 'success');
+          } else {
+              throw new Error('Error al eliminar');
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          mostrarAlerta('Error al eliminar el cargo', 'danger');
+      });
+  }
+
+  // ==================== UTILIDADES ====================
+  function mostrarAlerta(mensaje, tipo) {
+      const alertContainer = document.getElementById('alertContainer');
+      const alerta = document.createElement('div');
+      alerta.className = `alert alert-${tipo} alert-dismissible fade show`;
+      alerta.innerHTML = `
+          ${mensaje}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      alertContainer.appendChild(alerta);
+
+      setTimeout(() => {
+          alerta.remove();
+      }, 5000);
+  }
+
+  function formatearNumero(numero) {
+      return new Intl.NumberFormat('es-CO').format(numero);
+  }
+
+  function escapeHtml(text) {
+      const map = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+  }
+</script>
+
+</body>
+</html>
