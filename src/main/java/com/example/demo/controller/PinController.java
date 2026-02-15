@@ -33,6 +33,10 @@ public class PinController {
 
         Empleado empleado = empleadoOpt.get();
 
+        if (!empleado.isActivo()) {
+            return "redirect:/pin?error=inactive";
+        }
+
         session.setAttribute("empleado", empleado);
         session.setAttribute("rol", empleado.getRol());
 
