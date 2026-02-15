@@ -58,13 +58,26 @@ public class ViewController {
 
     // Vistas pendientes de crear (placeholder)
 
+    @GetMapping("/empleados")
+    public String empleados(HttpSession session, Model model) {
+        Empleado empleado = (Empleado) session.getAttribute("empleado");
+
+        if (empleado == null) {
+            return "redirect:/pin";
+        }
+
+        // Pasar el rol del usuario a la vista
+        model.addAttribute("usuarioRol", empleado.getRol().toString());
+
+        return "empleados";
+    }
 
     @GetMapping("/cargos")
     public String cargos(HttpSession session) {
         if (session.getAttribute("empleado") == null) {
             return "redirect:/pin";
         }
-        return "cargos"; // Crear vista
+        return "cargos";
     }
 
     @GetMapping("/horarios")
@@ -72,7 +85,7 @@ public class ViewController {
         if (session.getAttribute("empleado") == null) {
             return "redirect:/pin";
         }
-        return "horarios"; // Crear vista
+        return "horarios";
     }
 
     @GetMapping("/permisos")
@@ -80,7 +93,7 @@ public class ViewController {
         if (session.getAttribute("empleado") == null) {
             return "redirect:/pin";
         }
-        return "permisos"; // Crear vista
+        return "permisos";
     }
 
     @GetMapping("/permisos/pendientes")
@@ -88,7 +101,7 @@ public class ViewController {
         if (session.getAttribute("empleado") == null) {
             return "redirect:/pin";
         }
-        return "permisos-pendientes"; // Crear vista
+        return "permisos-pendientes";
     }
 
     @GetMapping("/vacaciones")
@@ -96,7 +109,7 @@ public class ViewController {
         if (session.getAttribute("empleado") == null) {
             return "redirect:/pin";
         }
-        return "vacaciones"; // Crear vista
+        return "vacaciones";
     }
 
     @GetMapping("/vacaciones/pendientes")
@@ -104,7 +117,7 @@ public class ViewController {
         if (session.getAttribute("empleado") == null) {
             return "redirect:/pin";
         }
-        return "vacaciones-pendientes"; // Crear vista
+        return "vacaciones-pendientes";
     }
 
     @GetMapping("/reportes")
@@ -112,7 +125,7 @@ public class ViewController {
         if (session.getAttribute("empleado") == null) {
             return "redirect:/pin";
         }
-        return "reportes"; // Crear vista
+        return "reportes";
     }
 
     @GetMapping("/dashboard")
@@ -120,7 +133,7 @@ public class ViewController {
         if (session.getAttribute("empleado") == null) {
             return "redirect:/pin";
         }
-        return "dashboard"; // Crear vista Power BI
+        return "dashboard";
     }
 }
 
