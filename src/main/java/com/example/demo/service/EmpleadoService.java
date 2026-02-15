@@ -70,6 +70,12 @@ public class EmpleadoService {
                     // Horario puede ser null (opcional)
                     empleado.setHorario(empleadoActualizado.getHorario());
 
+                    // ✅ ACTUALIZAR PIN Y ACTIVO
+                    if (empleadoActualizado.getPin() != null && !empleadoActualizado.getPin().isEmpty()) {
+                        empleado.setPin(empleadoActualizado.getPin());
+                    }
+                    empleado.setActivo(empleadoActualizado.isActivo());
+
                     return empleadoRepository.save(empleado);
                 });
     }
