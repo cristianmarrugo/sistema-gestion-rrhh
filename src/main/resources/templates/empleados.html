@@ -2,123 +2,576 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Gestión de Empleados</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="shortcut icon" href="/img/icono-rrhh.jpg" type="image/jpg">
+
+
+    <style>
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+        .badge-activo { background-color: #28a745; }
+        .badge-inactivo { background-color: #6c757d; }
+
+    </style>
 </head>
-<body class="bg-light">
+<body class="bg-light" th:attr="data-usuario-rol=${usuarioRol}">
 
-<div class="container mt-4">
+<div class="container-fluid mt-4">
 
-    <h2 class="mb-4">👥 Gestión de Empleados</h2>
-
-    <!-- FORMULARIO -->
-    <div class="card mb-4">
-        <div class="card-header">
-            Crear / Editar Empleado
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="mb-0"> Gestión de Empleados</h3>
+            <small class="text-muted">Administrar empleados, cargos y horarios</small>
         </div>
-        <div class="card-body">
-
-            <form th:action="@{/empleados/guardar}" th:object="${nuevoEmpleado}" method="post">
-
-                <input type="hidden" th:field="*{id}"/>
-
-                <div class="row">
-                    <div class="col-md-4">
-                        <label>Nombre</label>
-                        <input type="text" class="form-control" th:field="*{nombre}" required>
-                    </div>
-
-                    <div class="col-md-4">
-                        <label>Apellido</label>
-                        <input type="text" class="form-control" th:field="*{apellido}" required>
-                    </div>
-
-                    <div class="col-md-4">
-                        <label>Email</label>
-                        <input type="email" class="form-control" th:field="*{email}" required>
-                    </div>
-                </div>
-
-                <div class="row mt-3">
-                    <div class="col-md-4">
-                        <label>Documento</label>
-                        <input type="text" class="form-control" th:field="*{documento}">
-                    </div>
-
-                    <div class="col-md-4">
-                        <label>PIN</label>
-                        <input type="text" class="form-control" th:field="*{pin}">
-                    </div>
-
-                    <div class="col-md-4">
-                        <label>Rol</label>
-                        <select class="form-select" th:field="*{rol}">
-                            <option th:each="r : ${T(com.example.demo.model.Rol).values()}"
-                                    th:value="${r}"
-                                    th:text="${r}">
-                            </option>
-                        </select>
-                    </div>
-                </div>
-
-                <button class="btn btn-primary mt-3">
-                    Guardar
-                </button>
-            </form>
-
+        <div>
+            <a href="/index" class="btn btn-outline-secondary">
+                 Volver al inicio
+            </a>
         </div>
     </div>
 
-    <!-- TABLA -->
-    <div class="card">
-        <div class="card-header">
-            Lista de Empleados
+    <!-- ALERTAS -->
+    <div id="alertContainer"></div>
+
+    <!-- BARRA DE BÚSQUEDA Y FILTROS -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text"></span>
+                <input type="text"
+                       class="form-control"
+                       id="busqueda"
+                       placeholder="Buscar por nombre, apellido, documento..."
+                       onkeyup="buscarEmpleados()">
+            </div>
         </div>
+        <div class="col-md-3">
+            <select class="form-select" id="filtroEstado" onchange="cargarEmpleados()">
+                <option value="todos"> Todos los empleados</option>
+                <option value="activos" selected> Solo activos</option>
+                <option value="inactivos"> Solo inactivos</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalEmpleado" onclick="abrirModalCrear()">
+                 Crear Nuevo Empleado
+            </button>
+        </div>
+    </div>
 
-        <div class="card-body">
-
-            <table class="table table-bordered table-striped">
-                <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Email</th>
-                    <th>Rol</th>
-                    <th>Activo</th>
-                    <th>Acciones</th>
-                </tr>
-                </thead>
-
-                <tbody>
-                <tr th:each="emp : ${empleados}">
-                    <td th:text="${emp.id}"></td>
-                    <td th:text="${emp.nombre + ' ' + emp.apellido}"></td>
-                    <td th:text="${emp.email}"></td>
-                    <td th:text="${emp.rol}"></td>
-                    <td>
-                        <span th:if="${emp.activo}" class="badge bg-success">Activo</span>
-                        <span th:if="${!emp.activo}" class="badge bg-danger">Inactivo</span>
-                    </td>
-                    <td>
-                        <a th:href="@{'/empleados/editar/' + ${emp.id}}"
-                           class="btn btn-warning btn-sm">Editar</a>
-
-                        <a th:href="@{'/empleados/desactivar/' + ${emp.id}}"
-                           class="btn btn-danger btn-sm"
-                           onclick="return confirm('¿Seguro que deseas desactivar?')">
-                            Desactivar
-                        </a>
-                    </td>
-                </tr>
-                </tbody>
-
-            </table>
-
-            <a href="/index" class="btn-volver">⬅ Volver al inicio</a>
-
+    <!-- TABLA DE EMPLEADOS -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"> Lista de Empleados</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th width="5%">ID</th>
+                        <th width="20%">Nombre Completo</th>
+                        <th width="10%">Documento</th>
+                        <th width="15%">Email</th>
+                        <th width="12%">Cargo</th>
+                        <th width="10%">Rol</th>
+                        <th width="8%">PIN</th>
+                        <th width="8%">Estado</th>
+                        <th width="12%" class="text-center">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tablaEmpleados">
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2">Cargando empleados...</p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
 </div>
+
+<!-- MODAL CREAR/EDITAR EMPLEADO -->
+<div class="modal fade" id="modalEmpleado" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitulo"> Crear Empleado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEmpleado">
+                    <input type="hidden" id="empleadoId">
+
+                    <!-- DATOS PERSONALES -->
+                    <h6 class="border-bottom pb-2 mb-3"> Datos Personales</h6>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre" class="form-label">Nombre *</label>
+                            <input type="text" class="form-control" id="nombre" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="apellido" class="form-label">Apellido *</label>
+                            <input type="text" class="form-control" id="apellido" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="documento" class="form-label">Documento de Identidad *</label>
+                            <input type="text" class="form-control" id="documento" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fechaIngreso" class="form-label">Fecha de Ingreso *</label>
+                            <input type="date" class="form-control" id="fechaIngreso" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="pin" class="form-label">PIN de Acceso</label>
+                            <input type="text" class="form-control" id="pin" placeholder="Autogenerado si se deja vacío" maxlength="6">
+                            <small class="text-muted">6 dígitos. Se genera automáticamente si no se especifica.</small>
+                        </div>
+                    </div>
+
+                    <!-- ASIGNACIONES -->
+                    <h6 class="border-bottom pb-2 mb-3 mt-4"> Cargo y Permisos</h6>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cargo" class="form-label">Cargo *</label>
+                            <select class="form-select" id="cargo" required>
+                                <option value="">Seleccionar cargo...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="horario" class="form-label">Horario (Opcional)</label>
+                            <select class="form-select" id="horario">
+                                <option value="">Sin horario asignado</option>
+                            </select>
+                            <small class="text-muted">Puede asignarse después en Gestión de Horarios</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="rol" class="form-label">Rol en el Sistema *</label>
+                            <select class="form-select" id="rol" required>
+                                <option value="EMPLEADO"> Empleado</option>
+                                <option value="RRHH"> Recursos Humanos</option>
+                                <option value="ADMIN"> Administrador</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="activo" class="form-label">Estado *</label>
+                            <select class="form-select" id="activo" required>
+                                <option value="true"> Activo</option>
+                                <option value="false"> Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="guardarEmpleado()">
+                    <span id="btnTexto">Guardar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONFIRMAR DESACTIVACIÓN -->
+<div class="modal fade" id="modalDesactivar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">⚠ Confirmar Desactivación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas desactivar al empleado <strong id="empleadoDesactivarNombre"></strong>?</p>
+                <p class="text-muted">
+                    <small>El empleado no podrá acceder al sistema pero sus datos se conservarán.</small>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-warning" onclick="confirmarDesactivar()">
+                    Sí, Desactivar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    let modalEmpleado;
+    let modalDesactivar;
+    let empleadoIdDesactivar;
+    let todosLosEmpleados = [];
+    let esAdmin = false; // Se actualiza al cargar
+
+    // Inicializar al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        modalEmpleado = new bootstrap.Modal(document.getElementById('modalEmpleado'));
+        modalDesactivar = new bootstrap.Modal(document.getElementById('modalDesactivar'));
+
+        // Detectar si el usuario es ADMIN
+        detectarRolUsuario();
+
+        cargarCargos();
+        cargarHorarios();
+        cargarEmpleados();
+    });
+
+    // Detectar el rol del usuario desde el servidor
+    function detectarRolUsuario() {
+        // El rol está en el atributo data del body (lo pondremos en el HTML)
+        const rolElement = document.querySelector('[data-usuario-rol]');
+        if (rolElement) {
+            const rol = rolElement.getAttribute('data-usuario-rol');
+            esAdmin = (rol === 'ADMIN');
+        }
+    }
+
+    // ==================== CARGAR CARGOS ====================
+    function cargarCargos() {
+        fetch('/api/cargos')
+            .then(response => response.json())
+            .then(cargos => {
+                const select = document.getElementById('cargo');
+                select.innerHTML = '<option value="">Seleccionar cargo...</option>';
+                cargos.forEach(cargo => {
+                    select.innerHTML += `<option value="${cargo.id}">${cargo.nombre} - $${formatearNumero(cargo.salarioBase)}</option>`;
+                });
+            })
+            .catch(error => console.error('Error al cargar cargos:', error));
+    }
+
+    // ==================== CARGAR HORARIOS ====================
+    function cargarHorarios() {
+        fetch('/api/horarios')
+            .then(response => response.json())
+            .then(horarios => {
+                const select = document.getElementById('horario');
+                select.innerHTML = '<option value="">Seleccionar horario...</option>';
+                horarios.forEach(horario => {
+                    select.innerHTML += `<option value="${horario.id}">${horario.horaEntrada} - ${horario.horaSalida}</option>`;
+                });
+            })
+            .catch(error => console.error('Error al cargar horarios:', error));
+    }
+
+    // ==================== CARGAR EMPLEADOS ====================
+    function cargarEmpleados() {
+        const filtro = document.getElementById('filtroEstado').value;
+        const url = filtro === 'activos' ? '/api/empleados/activos' : '/api/empleados';
+
+        fetch(url)
+            .then(response => response.json())
+            .then(empleados => {
+                todosLosEmpleados = empleados;
+
+                if (filtro === 'inactivos') {
+                    todosLosEmpleados = empleados.filter(e => !e.activo);
+                }
+
+                renderizarTabla(todosLosEmpleados);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarAlerta('Error al cargar los empleados', 'danger');
+            });
+    }
+
+    // ==================== RENDERIZAR TABLA ====================
+    function renderizarTabla(empleados) {
+        const tbody = document.getElementById('tablaEmpleados');
+
+        if (empleados.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                         No hay empleados registrados
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = empleados.map(emp => `
+            <tr>
+                <td>${emp.id}</td>
+                <td><strong>${emp.nombre} ${emp.apellido}</strong></td>
+                <td>${emp.documento}</td>
+                <td><small>${emp.email}</small></td>
+                <td>${emp.cargo ? emp.cargo.nombre : '<span class="text-muted">Sin cargo</span>'}</td>
+                <td><span class="badge bg-secondary">${emp.rol}</span></td>
+                <td><code>${emp.pin}</code></td>
+                <td>
+                    <span class="badge ${emp.activo ? 'badge-activo' : 'badge-inactivo'}">
+                        ${emp.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-warning me-1"
+                            onclick='abrirModalEditar(${JSON.stringify(emp).replace(/'/g, "&apos;")})'
+                            title="Editar">
+                        Editar
+                    </button>
+                    ${emp.activo ? `
+                        <button class="btn btn-sm btn-danger"
+                                onclick="abrirModalDesactivar(${emp.id}, '${escapeHtml(emp.nombre + ' ' + emp.apellido)}')"
+                                title="Desactivar">
+                            Eliminar
+                        </button>
+                    ` : ''}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // ==================== BUSCAR EMPLEADOS ====================
+    function buscarEmpleados() {
+        const busqueda = document.getElementById('busqueda').value.toLowerCase();
+
+        const filtrados = todosLosEmpleados.filter(emp =>
+            emp.nombre.toLowerCase().includes(busqueda) ||
+            emp.apellido.toLowerCase().includes(busqueda) ||
+            emp.documento.includes(busqueda) ||
+            emp.email.toLowerCase().includes(busqueda)
+        );
+
+        renderizarTabla(filtrados);
+    }
+
+    // ==================== ABRIR MODAL CREAR ====================
+    function abrirModalCrear() {
+        document.getElementById('modalTitulo').textContent = ' Crear Empleado';
+        document.getElementById('btnTexto').textContent = 'Guardar';
+        document.getElementById('formEmpleado').reset();
+        document.getElementById('empleadoId').value = '';
+        document.getElementById('fechaIngreso').value = new Date().toISOString().split('T')[0];
+        document.getElementById('activo').value = 'true';
+        document.getElementById('rol').value = 'EMPLEADO';
+
+        // Al crear, habilitar todos los campos
+        document.getElementById('pin').disabled = false;
+        document.getElementById('rol').disabled = false;
+        document.getElementById('activo').disabled = false;
+        document.getElementById('documento').disabled = false;
+
+        // Si NO es ADMIN, limitar opciones de rol
+        if (!esAdmin) {
+            const selectRol = document.getElementById('rol');
+            // Quitar opción ADMIN si existe
+            const optionAdmin = selectRol.querySelector('option[value="ADMIN"]');
+            if (optionAdmin) {
+                optionAdmin.disabled = true;
+            }
+        } else {
+            // Si es ADMIN, habilitar todas las opciones
+            const selectRol = document.getElementById('rol');
+            const optionAdmin = selectRol.querySelector('option[value="ADMIN"]');
+            if (optionAdmin) {
+                optionAdmin.disabled = false;
+            }
+        }
+    }
+
+    // ==================== ABRIR MODAL EDITAR ====================
+    function abrirModalEditar(empleado) {
+        document.getElementById('modalTitulo').textContent = ' Editar Empleado';
+        document.getElementById('btnTexto').textContent = 'Actualizar';
+        document.getElementById('empleadoId').value = empleado.id;
+        document.getElementById('nombre').value = empleado.nombre;
+        document.getElementById('apellido').value = empleado.apellido;
+        document.getElementById('documento').value = empleado.documento;
+        document.getElementById('email').value = empleado.email;
+        document.getElementById('pin').value = empleado.pin || '';
+        document.getElementById('fechaIngreso').value = empleado.fechaIngreso;
+        document.getElementById('cargo').value = empleado.cargo ? empleado.cargo.id : '';
+        document.getElementById('horario').value = empleado.horario ? empleado.horario.id : '';
+        document.getElementById('rol').value = empleado.rol;
+        document.getElementById('activo').value = empleado.activo.toString();
+
+        // BLOQUEAR CAMPOS SI NO ES ADMIN
+        if (!esAdmin) {
+            // RRHH no puede editar: PIN, ROL, ESTADO
+            document.getElementById('pin').disabled = true;
+            document.getElementById('rol').disabled = true;
+            document.getElementById('activo').disabled = true;
+            document.getElementById('documento').disabled = true;
+
+            // Agregar tooltip visual
+            document.getElementById('pin').title = "Solo ADMIN puede cambiar el PIN";
+            document.getElementById('rol').title = "Solo ADMIN puede cambiar roles";
+            document.getElementById('activo').title = "Solo ADMIN puede activar/desactivar";
+            document.getElementById('documento').title = "No se puede cambiar el documento"
+        } else {
+            // Si es ADMIN, habilitar todo
+            document.getElementById('pin').disabled = false;
+            document.getElementById('rol').disabled = false;
+            document.getElementById('activo').disabled = false;
+            document.getElementById('documento').disabled = true;
+            document.getElementById('documento').title = "No se puede cambiar el documento"
+
+
+        }
+
+        modalEmpleado.show();
+    }
+
+    // ==================== GUARDAR EMPLEADO ====================
+    function guardarEmpleado() {
+        const id = document.getElementById('empleadoId').value;
+        const cargoId = document.getElementById('cargo').value;
+        const horarioId = document.getElementById('horario').value;
+
+        if (!cargoId) {
+            mostrarAlerta('Debes seleccionar un cargo', 'warning');
+            return;
+        }
+
+        // SOLUCIÓN: Usar readonly en lugar de disabled
+        // O habilitar temporalmente antes de leer los valores
+        const pinInput = document.getElementById('pin');
+        const rolSelect = document.getElementById('rol');
+        const activoSelect = document.getElementById('activo');
+
+        // Guardar estado de bloqueo
+        const pinWasDisabled = pinInput.disabled;
+        const rolWasDisabled = rolSelect.disabled;
+        const activoWasDisabled = activoSelect.disabled;
+
+        // Habilitar temporalmente para leer valores
+        pinInput.disabled = false;
+        rolSelect.disabled = false;
+        activoSelect.disabled = false;
+
+        const empleado = {
+            nombre: document.getElementById('nombre').value.trim(),
+            apellido: document.getElementById('apellido').value.trim(),
+            documento: document.getElementById('documento').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            pin: pinInput.value.trim() || null,
+            fechaIngreso: document.getElementById('fechaIngreso').value,
+            cargo: { id: parseInt(cargoId) },
+            horario: horarioId ? { id: parseInt(horarioId) } : null,
+            rol: rolSelect.value,
+            activo: activoSelect.value === 'true'
+        };
+
+        // Restaurar estado de bloqueo
+        pinInput.disabled = pinWasDisabled;
+        rolSelect.disabled = rolWasDisabled;
+        activoSelect.disabled = activoWasDisabled;
+
+        const url = id ? `/api/empleados/${id}` : '/api/empleados';
+        const method = id ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(empleado)
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Leer mensaje de error del servidor
+                return response.text().then(text => {
+                    throw new Error(text);
+                });
+            }
+            return response.json();
+        })
+        .then(() => {
+            modalEmpleado.hide();
+            cargarEmpleados();
+            mostrarAlerta(
+                id ? 'Empleado actualizado correctamente' : 'Empleado creado correctamente',
+                'success'
+            );
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mostrarAlerta(error.message || 'Error al guardar el empleado', 'danger');
+        });
+    }
+
+    // ==================== ABRIR MODAL DESACTIVAR ====================
+    function abrirModalDesactivar(id, nombre) {
+        empleadoIdDesactivar = id;
+        document.getElementById('empleadoDesactivarNombre').textContent = nombre;
+        modalDesactivar.show();
+    }
+
+    // ==================== CONFIRMAR DESACTIVACIÓN ====================
+    function confirmarDesactivar() {
+        fetch(`/api/empleados/${empleadoIdDesactivar}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                modalDesactivar.hide();
+                cargarEmpleados();
+                mostrarAlerta('Empleado desactivado correctamente', 'success');
+            } else {
+                throw new Error('Error al desactivar');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mostrarAlerta('Error al desactivar el empleado', 'danger');
+        });
+    }
+
+    // ==================== UTILIDADES ====================
+    function mostrarAlerta(mensaje, tipo) {
+        const alertContainer = document.getElementById('alertContainer');
+        const alerta = document.createElement('div');
+        alerta.className = `alert alert-${tipo} alert-dismissible fade show`;
+        alerta.innerHTML = `
+            ${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        alertContainer.appendChild(alerta);
+        setTimeout(() => alerta.remove(), 5000);
+    }
+
+    function formatearNumero(numero) {
+        return new Intl.NumberFormat('es-CO').format(numero);
+    }
+
+    function escapeHtml(text) {
+        const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'};
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+</script>
 
 </body>
 </html>
