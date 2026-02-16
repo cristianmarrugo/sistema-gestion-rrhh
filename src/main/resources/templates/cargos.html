@@ -4,6 +4,8 @@
   <title>Gestión de Cargos</title>
   <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="shortcut icon" href="/img/icono-rrhh.jpg" type="image/jpg">
+
   <style>
     .table-hover tbody tr:hover {
         background-color: #f8f9fa;
@@ -18,12 +20,12 @@
   <!-- HEADER -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-      <h3 class="mb-0">💼 Gestión de Cargos</h3>
+      <h3 class="mb-0"> Gestión de Cargos</h3>
       <small class="text-muted">Administrar cargos y salarios</small>
     </div>
     <div>
       <a href="/index" class="btn btn-outline-secondary">
-        ← Volver al inicio
+         Volver al inicio
       </a>
     </div>
   </div>
@@ -34,14 +36,14 @@
   <!-- BOTÓN CREAR NUEVO CARGO -->
   <div class="mb-3">
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCargo" onclick="abrirModalCrear()">
-      ➕ Crear Nuevo Cargo
+       Crear Nuevo Cargo
     </button>
   </div>
 
   <!-- TABLA DE CARGOS -->
   <div class="card shadow-sm">
     <div class="card-header bg-primary text-white">
-      <h5 class="mb-0">📋 Lista de Cargos</h5>
+      <h5 class="mb-0"> Lista de Cargos</h5>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
@@ -76,7 +78,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalTitulo">➕ Crear Cargo</h5>
+        <h5 class="modal-title" id="modalTitulo"> Crear Cargo</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -122,13 +124,13 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title">⚠️ Confirmar Eliminación</h5>
+        <h5 class="modal-title"> Confirmar Eliminación</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <p>¿Estás seguro de que deseas eliminar el cargo <strong id="cargoEliminarNombre"></strong>?</p>
         <p class="text-danger">
-          <small>⚠️ Esta acción no se puede deshacer. Los empleados con este cargo quedarán sin cargo asignado.</small>
+          <small> Esta acción no se puede deshacer. Los empleados con este cargo quedarán sin cargo asignado.</small>
         </p>
       </div>
       <div class="modal-footer">
@@ -168,7 +170,7 @@
                   tbody.innerHTML = `
                       <tr>
                           <td colspan="4" class="text-center py-5 text-muted">
-                              📦 No hay cargos registrados
+                               No hay cargos registrados
                           </td>
                       </tr>
                   `;
@@ -188,12 +190,12 @@
                           <button class="btn btn-sm btn-warning me-1"
                                   onclick="abrirModalEditar(${cargo.id}, '${escapeHtml(cargo.nombre)}', ${cargo.salarioBase})"
                                   title="Editar">
-                              ✏️
+                              Editar
                           </button>
                           <button class="btn btn-sm btn-danger"
                                   onclick="abrirModalEliminar(${cargo.id}, '${escapeHtml(cargo.nombre)}')"
                                   title="Eliminar">
-                              🗑️
+                              Eliminar
                           </button>
                       </td>
                   </tr>
@@ -207,7 +209,7 @@
 
   // ==================== ABRIR MODAL CREAR ====================
   function abrirModalCrear() {
-      document.getElementById('modalTitulo').textContent = '➕ Crear Cargo';
+      document.getElementById('modalTitulo').textContent = ' Crear Cargo';
       document.getElementById('btnTexto').textContent = 'Guardar';
       document.getElementById('formCargo').reset();
       document.getElementById('cargoId').value = '';
@@ -215,7 +217,7 @@
 
   // ==================== ABRIR MODAL EDITAR ====================
   function abrirModalEditar(id, nombre, salario) {
-      document.getElementById('modalTitulo').textContent = '✏️ Editar Cargo';
+      document.getElementById('modalTitulo').textContent = ' Editar Cargo';
       document.getElementById('btnTexto').textContent = 'Actualizar';
       document.getElementById('cargoId').value = id;
       document.getElementById('nombre').value = nombre;
