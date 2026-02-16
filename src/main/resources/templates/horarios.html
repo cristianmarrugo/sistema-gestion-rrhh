@@ -4,6 +4,8 @@
   <title>Gestión de Horarios</title>
   <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="shortcut icon" href="/img/icono-rrhh.jpg" type="image/jpg">
+
   <style>
     .horario-card {
         transition: all 0.3s;
@@ -32,12 +34,12 @@
   <!-- HEADER -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-      <h3 class="mb-0">🕐 Gestión de Horarios y Turnos</h3>
+      <h3 class="mb-0"> Gestión de Horarios y Turnos</h3>
       <small class="text-muted">Administrar horarios base y asignar empleados</small>
     </div>
     <div>
       <a href="/index" class="btn btn-outline-secondary">
-        ← Volver al inicio
+         Volver al inicio
       </a>
     </div>
   </div>
@@ -49,19 +51,19 @@
   <div class="row mb-4">
     <div class="col-md-6">
       <button class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalHorario" onclick="abrirModalCrear()">
-        ➕ Crear Nuevo Horario
+         Crear Nuevo Horario
       </button>
     </div>
     <div class="col-md-6">
       <button class="btn btn-warning btn-lg w-100" onclick="mostrarSeccionAsignacion()">
-        👥 Asignar Empleados a Horarios
+         Asignar Empleados a Horarios
       </button>
     </div>
   </div>
 
   <!-- SECCIÓN: LISTA DE HORARIOS -->
   <div id="seccionHorarios">
-    <h5 class="mb-3">📋 Horarios Disponibles</h5>
+    <h5 class="mb-3"> Horarios Disponibles</h5>
     <div class="row" id="listaHorarios">
       <div class="col-12 text-center py-5">
         <div class="spinner-border text-primary" role="status">
@@ -75,7 +77,7 @@
   <!-- SECCIÓN: ASIGNAR EMPLEADOS (OCULTA INICIALMENTE) -->
   <div id="seccionAsignacion" style="display: none;">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0">👥 Asignar Empleados a Horarios</h5>
+      <h5 class="mb-0"> Asignar Empleados a Horarios</h5>
       <button class="btn btn-outline-secondary" onclick="mostrarSeccionHorarios()">
         ← Volver a horarios
       </button>
@@ -83,7 +85,7 @@
 
     <!-- Empleados sin horario -->
     <div class="sin-horario-box mb-4">
-      <h6 class="text-danger">⚠️ Empleados sin horario asignado (<span id="countSinHorario">0</span>)</h6>
+      <h6 class="text-danger"> Empleados sin horario asignado (<span id="countSinHorario">0</span>)</h6>
       <div id="empleadosSinHorario" class="mt-2">
         <small class="text-muted">Cargando...</small>
       </div>
@@ -102,7 +104,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalTitulo">➕ Crear Horario</h5>
+        <h5 class="modal-title" id="modalTitulo"> Crear Horario</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -154,13 +156,13 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title">⚠️ Confirmar Eliminación</h5>
+        <h5 class="modal-title"> Confirmar Eliminación</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <p>¿Estás seguro de eliminar este horario?</p>
         <p class="text-danger">
-          <small>⚠️ Los empleados asignados a este horario quedarán sin horario.</small>
+          <small> Los empleados asignados a este horario quedarán sin horario.</small>
         </p>
       </div>
       <div class="modal-footer">
@@ -180,7 +182,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">👤 Asignar Horario a <span id="empleadoNombre"></span></h5>
+        <h5 class="modal-title"> Asignar Horario a <span id="empleadoNombre"></span></h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -243,7 +245,7 @@
       if (todosLosHorarios.length === 0) {
           container.innerHTML = `
               <div class="col-12 text-center py-5">
-                  <p class="text-muted">📦 No hay horarios creados</p>
+                  <p class="text-muted"> No hay horarios creados</p>
                   <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalHorario" onclick="abrirModalCrear()">
                       Crear Primer Horario
                   </button>
@@ -263,19 +265,19 @@
                       <div class="card-body">
                           <div class="d-flex justify-content-between align-items-start mb-3">
                               <div>
-                                  <h5 class="card-title">🕐 ${horario.horaEntrada} - ${horario.horaSalida}</h5>
+                                  <h5 class="card-title"> ${horario.horaEntrada} - ${horario.horaSalida}</h5>
                                   <small class="text-muted">Tolerancia: ${horario.toleranciaMinutos} min</small>
                               </div>
                               <div>
                                   <button class="btn btn-sm btn-warning me-1"
                                           onclick='abrirModalEditar(${JSON.stringify(horario)})'
                                           title="Editar">
-                                      ✏️
+                                      Editar
                                   </button>
                                   <button class="btn btn-sm btn-danger"
                                           onclick="abrirModalEliminar(${horario.id})"
                                           title="Eliminar">
-                                      🗑️
+                                      Eliminar
                                   </button>
                               </div>
                           </div>
@@ -283,7 +285,7 @@
                           <hr>
 
                           <div>
-                              <strong>👥 Empleados asignados: ${empleadosEnHorario.length}</strong>
+                              <strong> Empleados asignados: ${empleadosEnHorario.length}</strong>
                               <div class="mt-2">
                                   ${empleadosEnHorario.length > 0 ?
                                       empleadosEnHorario.slice(0, 5).map(e =>
@@ -306,7 +308,7 @@
 
   // ==================== MODAL CREAR ====================
   function abrirModalCrear() {
-      document.getElementById('modalTitulo').textContent = '➕ Crear Horario';
+      document.getElementById('modalTitulo').textContent = ' Crear Horario';
       document.getElementById('btnTexto').textContent = 'Guardar';
       document.getElementById('formHorario').reset();
       document.getElementById('horarioId').value = '';
@@ -315,7 +317,7 @@
 
   // ==================== MODAL EDITAR ====================
   function abrirModalEditar(horario) {
-      document.getElementById('modalTitulo').textContent = '✏️ Editar Horario';
+      document.getElementById('modalTitulo').textContent = ' Editar Horario';
       document.getElementById('btnTexto').textContent = 'Actualizar';
       document.getElementById('horarioId').value = horario.id;
       document.getElementById('horaEntrada').value = horario.horaEntrada;
@@ -406,7 +408,7 @@
 
       const containerSinHorario = document.getElementById('empleadosSinHorario');
       if (sinHorario.length === 0) {
-          containerSinHorario.innerHTML = '<small class="text-success">✅ Todos los empleados tienen horario asignado</small>';
+          containerSinHorario.innerHTML = '<small class="text-success"> Todos los empleados tienen horario asignado</small>';
       } else {
           containerSinHorario.innerHTML = sinHorario.map(e => `
               <button class="btn btn-sm btn-outline-danger empleado-badge"
@@ -426,7 +428,7 @@
           return `
               <div class="card mb-3">
                   <div class="card-header bg-light">
-                      <strong>🕐 ${horario.horaEntrada} - ${horario.horaSalida}</strong>
+                      <strong> ${horario.horaEntrada} - ${horario.horaSalida}</strong>
                       <span class="badge bg-primary float-end">${empleados.length} empleados</span>
                   </div>
                   <div class="card-body">
