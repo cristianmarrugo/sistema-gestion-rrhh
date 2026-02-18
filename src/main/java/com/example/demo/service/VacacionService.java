@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,40 +18,24 @@ public class VacacionService {
 
     private final VacacionRepository vacacionRepository;
 
+    /**
+     * Verificar si tiene vacaciones activas hoy
+     */
     public boolean tieneVacacionesHoy(Empleado empleado) {
         return vacacionRepository.existsVacacionActiva(
                 empleado, LocalDate.now()
         );
     }
 
-    public List<Vacacion> listarTodas() {
-        return vacacionRepository.findAll();
-    }
-
-    public List<Vacacion> listarPendientes() {
-        return vacacionRepository.findAll()
-                .stream()
-                .filter(v -> v.getEstado() == EstadoSolicitud.PENDIENTE)
-                .toList();
-    }
-
-    public List<Vacacion> listarPorEmpleado(Long empleadoId) {
-        return vacacionRepository.findAll()
-                .stream()
-                .filter(v -> v.getEmpleado().getId().equals(empleadoId))
-                .toList();
-    }
-
     /**
-     * Calcula días disponibles de vacaciones según legislación colombiana:
-     * - 15 días hábiles por año trabajado
-     * - Se acumulan proporcionalmente
+     * Calcular días disponibles
+     * En Colombia son 15 días hábiles por año trabajado
      */
     public int diasDisponibles(Empleado empleado) {
-        // Días anuales según ley colombiana
+        // Días anuales según legislación colombiana
         int diasAnuales = 15;
 
-        // Calcular días ya usados (aprobados)
+        // Calcular días ya usados (vacaciones aprobadas)
         int diasUsados = vacacionRepository.findAll()
                 .stream()
                 .filter(v -> v.getEmpleado().getId().equals(empleado.getId()))
@@ -61,59 +44,159 @@ public class VacacionService {
                 .mapToInt(Vacacion::getDiasSolicitados)
                 .sum();
 
-        return diasAnuales - diasUsados;
+        return Math.max(0, diasAnuales - diasUsados);
     }
 
+    /**
+     * Solicitar vacaciones
+     */
     @Transactional
-    public Vacacion solicitar(Vacacion vacacion, Empleado empleado) {
-        // Calcular días solicitados
-        long dias = ChronoUnit.DAYS.between(
-                vacacion.getFechaInicio(),
-                vacacion.getFechaFin()
-        ) + 1;
+    public Vacacion solicitarVacaciones(Empleado empleado, Vacacion vacacion) {
+        // Validar que no tenga otras vacaciones en las mismas fechas
+        boolean tieneVacacionEnRango = vacacionRepository.findAll()
+                .stream()
+                .filter(v -> v.getEmpleado().getId().equals(empleado.getId()))
+                .filter(v -> v.getEstado() == EstadoSolicitud.APROBADO ||
+                        v.getEstado() == EstadoSolicitud.PENDIENTE)
+                .anyMatch(v ->
+                        // Verificar si hay solapamiento de fechas
+                        !(vacacion.getFechaFin().isBefore(v.getFechaInicio()) ||
+                                vacacion.getFechaInicio().isAfter(v.getFechaFin()))
+                );
 
-        vacacion.setDiasSolicitados((int) dias);
-
-        // Validar que tenga días disponibles
-        int disponibles = diasDisponibles(empleado);
-        if (dias > disponibles) {
+        if (tieneVacacionEnRango) {
             throw new RuntimeException(
-                    "No tienes suficientes días disponibles. Tienes: " + disponibles
+                    "Ya tienes vacaciones solicitadas o aprobadas en estas fechas"
             );
         }
 
-        vacacion.setEmpleado(empleado);
-        vacacion.setEstado(EstadoSolicitud.PENDIENTE);
+        // Validar días disponibles
+        int disponibles = diasDisponibles(empleado);
+        if (vacacion.getDiasSolicitados() > disponibles) {
+            throw new RuntimeException(
+                    "Solo tienes " + disponibles + " días disponibles. " +
+                            "Estás solicitando " + vacacion.getDiasSolicitados() + " días."
+            );
+        }
 
+        // Crear nueva solicitud
+        Vacacion nuevaVacacion = new Vacacion();
+        nuevaVacacion.setEmpleado(empleado);
+        nuevaVacacion.setFechaInicio(vacacion.getFechaInicio());
+        nuevaVacacion.setFechaFin(vacacion.getFechaFin());
+        nuevaVacacion.setDiasSolicitados(vacacion.getDiasSolicitados());
+        nuevaVacacion.setEstado(EstadoSolicitud.PENDIENTE);
+
+        return vacacionRepository.save(nuevaVacacion);
+    }
+
+    /**
+     * Listar vacaciones de un empleado
+     */
+    public List<Vacacion> listarPorEmpleado(Empleado empleado) {
+        return vacacionRepository.findAll()
+                .stream()
+                .filter(v -> v.getEmpleado().getId().equals(empleado.getId()))
+                .sorted((a, b) -> b.getId().compareTo(a.getId())) // Más recientes primero
+                .toList();
+    }
+
+    /**
+     * Listar todas las vacaciones
+     */
+    public List<Vacacion> listarTodas() {
+        return vacacionRepository.findAll()
+                .stream()
+                .sorted((a, b) -> b.getId().compareTo(a.getId()))
+                .toList();
+    }
+
+    /**
+     * Listar vacaciones pendientes
+     */
+    public List<Vacacion> listarPendientes() {
+        return vacacionRepository.findAll()
+                .stream()
+                .filter(v -> v.getEstado() == EstadoSolicitud.PENDIENTE)
+                .sorted((a, b) -> a.getFechaInicio().compareTo(b.getFechaInicio()))
+                .toList();
+    }
+
+    /**
+     * Aprobar vacaciones
+     */
+    @Transactional
+    public Vacacion aprobar(Long id) {
+        Vacacion vacacion = vacacionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Vacación no encontrada"));
+
+        if (vacacion.getEstado() != EstadoSolicitud.PENDIENTE) {
+            throw new RuntimeException(
+                    "Estas vacaciones ya fueron " + vacacion.getEstado().toString().toLowerCase()
+            );
+        }
+
+        vacacion.setEstado(EstadoSolicitud.APROBADO);
         return vacacionRepository.save(vacacion);
     }
 
+    /**
+     * Rechazar vacaciones
+     */
     @Transactional
-    public Optional<Vacacion> aprobar(Long id) {
-        return vacacionRepository.findById(id)
-                .map(vacacion -> {
-                    vacacion.setEstado(EstadoSolicitud.APROBADO);
-                    return vacacionRepository.save(vacacion);
-                });
+    public Vacacion rechazar(Long id) {
+        Vacacion vacacion = vacacionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Vacación no encontrada"));
+
+        if (vacacion.getEstado() != EstadoSolicitud.PENDIENTE) {
+            throw new RuntimeException(
+                    "Estas vacaciones ya fueron " + vacacion.getEstado().toString().toLowerCase()
+            );
+        }
+
+        vacacion.setEstado(EstadoSolicitud.RECHAZADO);
+        return vacacionRepository.save(vacacion);
     }
 
-    @Transactional
-    public Optional<Vacacion> rechazar(Long id) {
-        return vacacionRepository.findById(id)
-                .map(vacacion -> {
-                    vacacion.setEstado(EstadoSolicitud.RECHAZADO);
-                    return vacacionRepository.save(vacacion);
-                });
+    /**
+     * Obtener vacación por ID
+     */
+    public Optional<Vacacion> obtenerPorId(Long id) {
+        return vacacionRepository.findById(id);
     }
 
-    @Transactional
-    public boolean eliminar(Long id) {
-        return vacacionRepository.findById(id)
-                .map(vacacion -> {
-                    vacacionRepository.delete(vacacion);
-                    return true;
-                })
-                .orElse(false);
+    /**
+     * Contar vacaciones pendientes
+     */
+    public long contarPendientes() {
+        return vacacionRepository.findAll()
+                .stream()
+                .filter(v -> v.getEstado() == EstadoSolicitud.PENDIENTE)
+                .count();
+    }
+
+    /**
+     * Contar vacaciones de un empleado por estado
+     */
+    public long contarPorEmpleadoYEstado(Empleado empleado, EstadoSolicitud estado) {
+        return vacacionRepository.findAll()
+                .stream()
+                .filter(v -> v.getEmpleado().getId().equals(empleado.getId()))
+                .filter(v -> v.getEstado() == estado)
+                .count();
+    }
+
+    /**
+     * Calcular días de vacaciones usados en el año actual
+     */
+    public int diasUsadosEnElAnio(Empleado empleado) {
+        return vacacionRepository.findAll()
+                .stream()
+                .filter(v -> v.getEmpleado().getId().equals(empleado.getId()))
+                .filter(v -> v.getEstado() == EstadoSolicitud.APROBADO)
+                .filter(v -> v.getFechaInicio().getYear() == LocalDate.now().getYear())
+                .mapToInt(Vacacion::getDiasSolicitados)
+                .sum();
     }
 }
 
