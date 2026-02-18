@@ -122,10 +122,19 @@ public class ViewController {
 
     @GetMapping("/reportes")
     public String reportes(HttpSession session) {
-        if (session.getAttribute("empleado") == null) {
+        Empleado empleado = (Empleado) session.getAttribute("empleado");
+
+        if (empleado == null) {
             return "redirect:/pin";
         }
-        return "reportes";
+
+        // Solo ADMIN y RRHH pueden ver reportes
+        if (!"ADMIN".equals(empleado.getRol().toString()) &&
+                !"RRHH".equals(empleado.getRol().toString())) {
+            return "redirect:/index";
+        }
+
+        return "reportes-asistencia";
     }
 
     @GetMapping("/dashboard")
