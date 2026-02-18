@@ -84,6 +84,11 @@ public class AsistenciaService {
             throw new RuntimeException("Empleado inactivo");
         }
 
+        // VALIDAR QUE TENGA HORARIO ASIGNADO
+        if (empleado.getHorario() == null) {
+            throw new RuntimeException("Este empleado no tiene un horario asignado. Contacta a RRHH.");
+        }
+
         LocalDate hoy = LocalDate.now();
         LocalTime ahora = LocalTime.now();
 
@@ -123,6 +128,9 @@ public class AsistenciaService {
 
         if (asistencia.getHoraSalida() == null) return;
 
+        // Validar que el empleado tenga horario
+        if (asistencia.getEmpleado().getHorario() == null) return;
+
         Horario horario = asistencia.getEmpleado().getHorario();
 
         LocalTime salidaHorario = horario.getHoraSalida();
@@ -149,6 +157,79 @@ public class AsistenciaService {
 
             horaExtraRepository.save(extra);
         }
+    }
+
+    // ==================== MÉTODOS DE CONSULTA ====================
+
+    /**
+     * Obtener asistencia de hoy del empleado
+     */
+    public Optional<Asistencia> obtenerAsistenciaHoy(Empleado empleado) {
+        return asistenciaRepository.findByEmpleadoAndFecha(empleado, LocalDate.now());
+    }
+
+    /**
+     * Obtener asistencia por ID
+     */
+    public Optional<Asistencia> obtenerPorId(Long id) {
+        return asistenciaRepository.findById(id);
+    }
+
+    /**
+     * Listar todas las asistencias
+     */
+    public List<Asistencia> listarTodas() {
+        return asistenciaRepository.findAll();
+    }
+
+    /**
+     * Listar asistencias por fecha
+     */
+    public List<Asistencia> listarPorFecha(LocalDate fecha) {
+        return asistenciaRepository.findAll()
+                .stream()
+                .filter(a -> a.getFecha().equals(fecha))
+                .toList();
+    }
+
+    /**
+     * Listar asistencias por empleado
+     */
+    public List<Asistencia> listarPorEmpleado(Long empleadoId) {
+        Empleado empleado = empleadoRepository.findById(empleadoId).orElse(null);
+        if (empleado == null) return List.of();
+
+        return asistenciaRepository.findAll()
+                .stream()
+                .filter(a -> a.getEmpleado().getId().equals(empleadoId))
+                .toList();
+    }
+
+    /**
+     * Listar asistencias por fecha y empleado
+     */
+    public List<Asistencia> listarPorFechaYEmpleado(LocalDate fecha, Long empleadoId) {
+        Empleado empleado = empleadoRepository.findById(empleadoId).orElse(null);
+        if (empleado == null) return List.of();
+
+        return asistenciaRepository.findByEmpleadoAndFecha(empleado, fecha)
+                .map(List::of)
+                .orElse(List.of());
+    }
+
+    /**
+     * Listar asistencias por empleado y mes
+     */
+    public List<Asistencia> listarPorEmpleadoYMes(Long empleadoId, int mes, int anio) {
+        Empleado empleado = empleadoRepository.findById(empleadoId).orElse(null);
+        if (empleado == null) return List.of();
+
+        return asistenciaRepository.findAll()
+                .stream()
+                .filter(a -> a.getEmpleado().getId().equals(empleadoId))
+                .filter(a -> a.getFecha().getMonthValue() == mes)
+                .filter(a -> a.getFecha().getYear() == anio)
+                .toList();
     }
 }
 
