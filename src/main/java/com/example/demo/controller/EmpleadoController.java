@@ -81,6 +81,13 @@ public class EmpleadoController {
             }
         }
 
+        if (usuarioLogueado.getId().equals(id)) {
+            if (!empleadoActualizado.isActivo() && empleadoExistente.isActivo()) {
+                return ResponseEntity.status(403)
+                        .body("No puedes desactivar tu propia cuenta por seguridad. Solicita a otro ADMIN que lo haga.");
+            }
+        }
+
         // ====== VALIDACIÓN DE PERMISOS ======
 
         // Si el usuario es RRHH (NO es ADMIN)
