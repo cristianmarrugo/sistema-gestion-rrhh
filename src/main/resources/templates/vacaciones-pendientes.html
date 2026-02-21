@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Gestión de Vacaciones</title>
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="shortcut icon" href="/img/icono-rrhh.jpg" type="image/jpg">
+
+  <style>
+    .badge-estado {
+        font-size: 0.9rem;
+        padding: 5px 10px;
+    }
+    .vacacion-card {
+        transition: all 0.3s;
+    }
+    .vacacion-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid mt-4">
+
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="mb-0">🏖️ Gestión de Vacaciones</h3>
+      <small class="text-muted">Aprobar o rechazar solicitudes de vacaciones</small>
+    </div>
+    <div>
+      <a href="/index" class="btn btn-outline-secondary">
+        ← Volver al inicio
+      </a>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div id="alertContainer"></div>
+
+  <!-- ESTADÍSTICAS GLOBALES -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card shadow-sm text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Total Solicitudes</h6>
+          <h2 id="statTotal" class="mb-0">0</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm text-center border-warning">
+        <div class="card-body">
+          <h6 class="text-muted">⏳ Pendientes</h6>
+          <h2 id="statPendientes" class="mb-0 text-warning">0</h2>
+          <small class="text-muted">Requieren atención</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm text-center">
+        <div class="card-body">
+          <h6 class="text-muted">✅ Aprobadas</h6>
+          <h2 id="statAprobados" class="mb-0 text-success">0</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm text-center">
+        <div class="card-body">
+          <h6 class="text-muted">❌ Rechazadas</h6>
+          <h2 id="statRechazados" class="mb-0 text-danger">0</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">📊 Estado</label>
+          <select id="filtroEstado"
+                  class="form-select"
+                  onchange="aplicarFiltros()">
+            <option value="">Todos</option>
+            <option value="PENDIENTE" selected>⏳ Solo Pendientes</option>
+            <option value="APROBADO">✅ Aprobadas</option>
+            <option value="RECHAZADO">❌ Rechazadas</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">👤 Empleado</label>
+          <select id="filtroEmpleado"
+                  class="form-select"
+                  onchange="aplicarFiltros()">
+            <option value="">Todos los empleados</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">📅 Período</label>
+          <select id="filtroPeriodo"
+                  class="form-select"
+                  onchange="aplicarFiltros()">
+            <option value="">Todas las fechas</option>
+            <option value="proximos">Próximos 30 días</option>
+            <option value="mes">Este mes</option>
+            <option value="anio">Este año</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">&nbsp;</label>
+          <button class="btn btn-outline-secondary w-100" onclick="limpiarFiltros()">
+            🔄 Limpiar filtros
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active"
+              id="pendientes-tab"
+              data-bs-toggle="tab"
+              data-bs-target="#pendientes"
+              type="button">
+        ⏳ Pendientes (<span id="countPendientes">0</span>)
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link"
+              id="calendario-tab"
+              data-bs-toggle="tab"
+              data-bs-target="#calendario"
+              type="button">
+        📅 Calendario de Vacaciones
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link"
+              id="todos-tab"
+              data-bs-toggle="tab"
+              data-bs-target="#todos"
+              type="button">
+        📋 Todas
+      </button>
+    </li>
+  </ul>
+
+  <!-- TAB CONTENT -->
+  <div class="tab-content">
+
+    <!-- TAB PENDIENTES -->
+    <div class="tab-pane fade show active" id="pendientes" role="tabpanel">
+      <div class="row" id="listaVacacionesPendientes">
+        <div class="col-12 text-center">
+          <div class="spinner-border text-primary"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB CALENDARIO -->
+    <div class="tab-pane fade" id="calendario" role="tabpanel">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5>📅 Vacaciones Aprobadas por Mes</h5>
+          <div id="calendarioVacaciones">
+            <div class="text-center">
+              <div class="spinner-border text-primary"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB TODAS -->
+    <div class="tab-pane fade" id="todos" role="tabpanel">
+      <div class="row" id="listaVacacionesTodas">
+        <div class="col-12 text-center">
+          <div class="spinner-border text-primary"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- MODAL DETALLE Y APROBAR/RECHAZAR -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🏖️ Detalle de Vacaciones</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="detalleVacacion">
+        <!-- Se llena dinámicamente -->
+      </div>
+      <div class="modal-footer" id="botonesAccion">
+        <!-- Botones dinámicos según estado -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let modalDetalle;
+  let todasLasVacaciones = [];
+  let vacacionActual = null;
+
+  // Inicializar
+  document.addEventListener('DOMContentLoaded', function() {
+      modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalle'));
+
+      cargarEmpleados();
+      cargarVacaciones();
+  });
+
+  // Cargar lista de empleados para filtro
+  function cargarEmpleados() {
+      fetch('/api/empleados')
+          .then(response => response.json())
+          .then(empleados => {
+              const select = document.getElementById('filtroEmpleado');
+              empleados.forEach(emp => {
+                  const option = document.createElement('option');
+                  option.value = emp.id;
+                  option.textContent = `${emp.nombre} ${emp.apellido}`;
+                  select.appendChild(option);
+              });
+          });
+  }
+
+  // Cargar todas las vacaciones
+  function cargarVacaciones() {
+      fetch('/api/vacaciones')
+          .then(response => response.json())
+          .then(data => {
+              todasLasVacaciones = data;
+              renderizarVacaciones();
+              calcularEstadisticas(data);
+              renderizarCalendario(data);
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              mostrarAlerta('Error al cargar vacaciones', 'danger');
+          });
+  }
+
+  // Renderizar vacaciones
+  function renderizarVacaciones() {
+      const pendientes = todasLasVacaciones.filter(v => v.estado === 'PENDIENTE');
+
+      renderizarLista('listaVacacionesPendientes', pendientes);
+      renderizarLista('listaVacacionesTodas', todasLasVacaciones);
+
+      document.getElementById('countPendientes').textContent = pendientes.length;
+  }
+
+  // Renderizar lista específica
+  function renderizarLista(containerId, vacaciones) {
+      const container = document.getElementById(containerId);
+
+      if (vacaciones.length === 0) {
+          container.innerHTML = `
+              <div class="col-12">
+                  <div class="alert alert-info text-center">
+                      🏖️ No hay vacaciones para mostrar
+                  </div>
+              </div>
+          `;
+          return;
+      }
+
+      container.innerHTML = vacaciones.map(v => {
+          const urgente = esUrgente(v.fechaInicio);
+          const diasLibres = v.diasSolicitados;
+
+          return `
+              <div class="col-md-6 col-lg-4 mb-3">
+                  <div class="card shadow-sm vacacion-card h-100 ${urgente ? 'border-warning' : ''}">
+                      <div class="card-body">
+                          <div class="d-flex justify-content-between align-items-start mb-2">
+                              <div>
+                                  <h6 class="card-title mb-0">
+                                      ${v.empleado.nombre} ${v.empleado.apellido}
+                                  </h6>
+                                  <small class="text-muted">${v.empleado.cargo ? v.empleado.cargo.nombre : 'Sin cargo'}</small>
+                              </div>
+                              <span class="badge ${getBadgeClass(v.estado)}">
+                                  ${getEstadoIcon(v.estado)} ${v.estado}
+                              </span>
+                          </div>
+
+                          ${urgente ? '<div class="alert alert-warning p-2 mb-2"><small>⚠️ Vacaciones inician pronto</small></div>' : ''}
+
+                          <hr>
+
+                          <p class="mb-2">
+                              <strong>📅 Inicio:</strong> ${formatearFecha(v.fechaInicio)}
+                          </p>
+                          <p class="mb-2">
+                              <strong>📅 Fin:</strong> ${formatearFecha(v.fechaFin)}
+                          </p>
+                          <p class="mb-2">
+                              <strong>📊 Duración:</strong>
+                              <span class="badge bg-primary">${diasLibres} día${diasLibres !== 1 ? 's' : ''}</span>
+                          </p>
+
+                          <div class="d-grid gap-2 mt-3">
+                              <button class="btn btn-sm btn-outline-primary"
+                                      onclick="verDetalle(${v.id})">
+                                  👁️ Ver detalle
+                              </button>
+                              ${v.estado === 'PENDIENTE' ? `
+                                  <div class="btn-group">
+                                      <button class="btn btn-sm btn-success"
+                                              onclick="aprobarRapido(${v.id})">
+                                          ✅ Aprobar
+                                      </button>
+                                      <button class="btn btn-sm btn-danger"
+                                              onclick="rechazarRapido(${v.id})">
+                                          ❌ Rechazar
+                                      </button>
+                                  </div>
+                              ` : ''}
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          `;
+      }).join('');
+  }
+
+  // Renderizar calendario de vacaciones
+  function renderizarCalendario(vacaciones) {
+      const container = document.getElementById('calendarioVacaciones');
+      const aprobadas = vacaciones.filter(v => v.estado === 'APROBADO');
+
+      if (aprobadas.length === 0) {
+          container.innerHTML = '<p class="text-muted">No hay vacaciones aprobadas para mostrar</p>';
+          return;
+      }
+
+      // Agrupar por mes
+      const porMes = {};
+      aprobadas.forEach(v => {
+          const mes = new Date(v.fechaInicio + 'T00:00:00').toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+          if (!porMes[mes]) porMes[mes] = [];
+          porMes[mes].push(v);
+      });
+
+      container.innerHTML = Object.entries(porMes).map(([mes, vacaciones]) => `
+          <div class="mb-4">
+              <h6 class="text-primary">${mes.charAt(0).toUpperCase() + mes.slice(1)}</h6>
+              <div class="list-group">
+                  ${vacaciones.map(v => `
+                      <div class="list-group-item">
+                          <div class="d-flex justify-content-between align-items-center">
+                              <div>
+                                  <strong>${v.empleado.nombre} ${v.empleado.apellido}</strong>
+                                  <br>
+                                  <small class="text-muted">
+                                      ${formatearFecha(v.fechaInicio)} - ${formatearFecha(v.fechaFin)}
+                                      (${v.diasSolicitados} días)
+                                  </small>
+                              </div>
+                              <span class="badge bg-success">✅ Aprobado</span>
+                          </div>
+                      </div>
+                  `).join('')}
+              </div>
+          </div>
+      `).join('');
+  }
+
+  // Ver detalle de vacaciones
+  function verDetalle(id) {
+      vacacionActual = todasLasVacaciones.find(v => v.id === id);
+      if (!vacacionActual) return;
+
+      document.getElementById('detalleVacacion').innerHTML = `
+          <div class="row">
+              <div class="col-md-6">
+                  <h6>👤 Empleado</h6>
+                  <p><strong>${vacacionActual.empleado.nombre} ${vacacionActual.empleado.apellido}</strong></p>
+                  <p class="text-muted">${vacacionActual.empleado.cargo ? vacacionActual.empleado.cargo.nombre : 'Sin cargo'}</p>
+              </div>
+              <div class="col-md-6">
+                  <h6>📊 Estado Actual</h6>
+                  <span class="badge ${getBadgeClass(vacacionActual.estado)} fs-5">
+                      ${getEstadoIcon(vacacionActual.estado)} ${vacacionActual.estado}
+                  </span>
+              </div>
+          </div>
+          <hr>
+          <div class="row">
+              <div class="col-md-6">
+                  <p><strong>📅 Fecha Inicio:</strong><br>${formatearFecha(vacacionActual.fechaInicio)}</p>
+              </div>
+              <div class="col-md-6">
+                  <p><strong>📅 Fecha Fin:</strong><br>${formatearFecha(vacacionActual.fechaFin)}</p>
+              </div>
+          </div>
+          <p><strong>📊 Días Solicitados:</strong> ${vacacionActual.diasSolicitados} día(s)</p>
+          <hr>
+          <div class="alert alert-info">
+              <strong>ℹ️ Información adicional:</strong>
+              <ul class="mb-0">
+                  <li>Legislación Colombia: 15 días hábiles por año</li>
+                  <li>Días calculados en días calendario (incluye fines de semana)</li>
+              </ul>
+          </div>
+      `;
+
+      // Botones según estado
+      const botones = document.getElementById('botonesAccion');
+      if (vacacionActual.estado === 'PENDIENTE') {
+          botones.innerHTML = `
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                  Cancelar
+              </button>
+              <button type="button" class="btn btn-danger" onclick="rechazarVacaciones()">
+                  ❌ Rechazar
+              </button>
+              <button type="button" class="btn btn-success" onclick="aprobarVacaciones()">
+                  ✅ Aprobar
+              </button>
+          `;
+      } else {
+          botones.innerHTML = `
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                  Cerrar
+              </button>
+          `;
+      }
+
+      modalDetalle.show();
+  }
+
+  // Aprobar vacaciones
+  function aprobarVacaciones() {
+      if (!vacacionActual) return;
+
+      if (!confirm(`¿Aprobar ${vacacionActual.diasSolicitados} días de vacaciones para ${vacacionActual.empleado.nombre}?`)) return;
+
+      fetch(`/api/vacaciones/${vacacionActual.id}/aprobar`, {
+          method: 'PUT'
+      })
+      .then(response => response.json())
+      .then(data => {
+          modalDetalle.hide();
+          mostrarAlerta(`✅ Vacaciones aprobadas para ${data.empleado.nombre} ${data.empleado.apellido}`, 'success');
+          cargarVacaciones();
+      })
+      .catch(error => {
+          mostrarAlerta('Error al aprobar vacaciones', 'danger');
+      });
+  }
+
+  // Rechazar vacaciones
+  function rechazarVacaciones() {
+      if (!vacacionActual) return;
+
+      if (!confirm(`¿Rechazar vacaciones de ${vacacionActual.empleado.nombre}?`)) return;
+
+      fetch(`/api/vacaciones/${vacacionActual.id}/rechazar`, {
+          method: 'PUT'
+      })
+      .then(response => response.json())
+      .then(data => {
+          modalDetalle.hide();
+          mostrarAlerta(`❌ Vacaciones rechazadas para ${data.empleado.nombre} ${data.empleado.apellido}`, 'warning');
+          cargarVacaciones();
+      })
+      .catch(error => {
+          mostrarAlerta('Error al rechazar vacaciones', 'danger');
+      });
+  }
+
+  // Aprobar rápido
+  function aprobarRapido(id) {
+      const vacacion = todasLasVacaciones.find(v => v.id === id);
+      if (!vacacion || !confirm(`¿Aprobar vacaciones de ${vacacion.empleado.nombre}?`)) return;
+
+      fetch(`/api/vacaciones/${id}/aprobar`, {
+          method: 'PUT'
+      })
+      .then(response => response.json())
+      .then(() => {
+          mostrarAlerta('✅ Vacaciones aprobadas', 'success');
+          cargarVacaciones();
+      });
+  }
+
+  // Rechazar rápido
+  function rechazarRapido(id) {
+      const vacacion = todasLasVacaciones.find(v => v.id === id);
+      if (!vacacion || !confirm(`¿Rechazar vacaciones de ${vacacion.empleado.nombre}?`)) return;
+
+      fetch(`/api/vacaciones/${id}/rechazar`, {
+          method: 'PUT'
+      })
+      .then(response => response.json())
+      .then(() => {
+          mostrarAlerta('❌ Vacaciones rechazadas', 'warning');
+          cargarVacaciones();
+      });
+  }
+
+  // Aplicar filtros
+  function aplicarFiltros() {
+      // Implementar si es necesario
+      cargarVacaciones();
+  }
+
+  // Limpiar filtros
+  function limpiarFiltros() {
+      document.getElementById('filtroEstado').value = 'PENDIENTE';
+      document.getElementById('filtroEmpleado').value = '';
+      document.getElementById('filtroPeriodo').value = '';
+      cargarVacaciones();
+  }
+
+  // Verificar si es urgente (inicia en menos de 7 días)
+  function esUrgente(fechaInicio) {
+      const hoy = new Date();
+      const inicio = new Date(fechaInicio + 'T00:00:00');
+      const diferencia = inicio - hoy;
+      const diasFaltantes = Math.ceil(diferencia / (1000 * 60 * 60 * 24));
+      return diasFaltantes <= 7 && diasFaltantes >= 0;
+  }
+
+  // Formatear fecha
+  function formatearFecha(fecha) {
+      const opciones = { year: 'numeric', month: 'short', day: 'numeric' };
+      return new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', opciones);
+  }
+
+  // Obtener clase de badge
+  function getBadgeClass(estado) {
+      switch(estado) {
+          case 'PENDIENTE': return 'bg-warning';
+          case 'APROBADO': return 'bg-success';
+          case 'RECHAZADO': return 'bg-danger';
+          default: return 'bg-secondary';
+      }
+  }
+
+  // Obtener ícono
+  function getEstadoIcon(estado) {
+      switch(estado) {
+          case 'PENDIENTE': return '⏳';
+          case 'APROBADO': return '✅';
+          case 'RECHAZADO': return '❌';
+          default: return '🏖️';
+      }
+  }
+
+  // Calcular estadísticas
+  function calcularEstadisticas(vacaciones) {
+      const stats = {
+          total: vacaciones.length,
+          pendientes: vacaciones.filter(v => v.estado === 'PENDIENTE').length,
+          aprobados: vacaciones.filter(v => v.estado === 'APROBADO').length,
+          rechazados: vacaciones.filter(v => v.estado === 'RECHAZADO').length
+      };
+
+      document.getElementById('statTotal').textContent = stats.total;
+      document.getElementById('statPendientes').textContent = stats.pendientes;
+      document.getElementById('statAprobados').textContent = stats.aprobados;
+      document.getElementById('statRechazados').textContent = stats.rechazados;
+  }
+
+  // Mostrar alerta
+  function mostrarAlerta(mensaje, tipo) {
+      const container = document.getElementById('alertContainer');
+      container.innerHTML = `
+          <div class="alert alert-${tipo} alert-dismissible fade show">
+              ${mensaje}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+      `;
+      setTimeout(() => container.innerHTML = '', 5000);
+  }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
