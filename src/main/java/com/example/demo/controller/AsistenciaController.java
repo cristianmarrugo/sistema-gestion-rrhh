@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Asistencia;
 import com.example.demo.model.Empleado;
+import com.example.demo.repository.AsistenciaRepository;
 import com.example.demo.service.AsistenciaService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/asistencias")
@@ -18,6 +21,7 @@ import java.util.List;
 public class AsistenciaController {
 
     private final AsistenciaService asistenciaService;
+    private final AsistenciaRepository asistenciaRepository;
 
     /**
      * Marcar asistencia del empleado logueado
@@ -165,6 +169,48 @@ public class AsistenciaController {
         // Aquí puedes crear un DTO con estadísticas
         // Por ahora retornamos info básica
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Verificar si el empleado tuvo salida automática ayer
+     * GET /api/asistencias/verificar-salida-automatica
+     */
+    @GetMapping("/verificar-salida-automatica")
+    public ResponseEntity<?> verificarSalidaAutomatica(HttpSession session) {
+        Empleado empleado = (Empleado) session.getAttribute("empleado");
+
+        if (empleado == null) {
+            return ResponseEntity.status(401).body("No autenticado");
+        }
+
+        LocalDate ayer = LocalDate.now().minusDays(1);
+
+        Optional<Asistencia> asistenciaAyer = asistenciaRepository
+                .findByEmpleadoAndFecha(empleado, ayer);
+
+        boolean tuveSalidaAutomatica = false;
+
+        if (asistenciaAyer.isPresent()) {
+            Asistencia asist = asistenciaAyer.get();
+
+            // Si tiene entrada y salida, y la salida es exactamente la hora del horario
+            if (asist.getHoraEntrada() != null &&
+                    asist.getHoraSalida() != null &&
+                    empleado.getHorario() != null) {
+
+                LocalTime salidaRegistrada = asist.getHoraSalida();
+                LocalTime salidaEsperada = empleado.getHorario().getHoraSalida();
+
+                // Si la salida es exactamente la esperada (probablemente automática)
+                if (salidaRegistrada.equals(salidaEsperada)) {
+                    tuveSalidaAutomatica = true;
+                }
+            }
+        }
+
+        return ResponseEntity.ok(
+                java.util.Map.of("tuveSalidaAutomatica", tuveSalidaAutomatica)
+        );
     }
 }
 
