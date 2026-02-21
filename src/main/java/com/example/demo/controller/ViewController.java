@@ -120,7 +120,7 @@ public class ViewController {
         return "vacaciones-pendientes";
     }
 
-    @GetMapping("/reportes")
+    @GetMapping("/reportes-asistencia")
     public String reportes(HttpSession session) {
         Empleado empleado = (Empleado) session.getAttribute("empleado");
 
