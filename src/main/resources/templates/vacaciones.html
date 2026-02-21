@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Mis Vacaciones</title>
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="shortcut icon" href="/img/icono-rrhh.jpg" type="image/jpg">
+  <style>
+    .badge-estado {
+        font-size: 0.9rem;
+        padding: 5px 10px;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid mt-4">
+
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="mb-0"> Mis Vacaciones</h3>
+      <small class="text-muted">Solicitar y gestionar tus vacaciones</small>
+    </div>
+    <div>
+      <a href="/index" class="btn btn-outline-secondary">
+        ← Volver al inicio
+      </a>
+    </div>
+  </div>
+
+  <!-- INFORMACIÓN DE DÍAS DISPONIBLES -->
+  <div class="card shadow-sm mb-4 bg-primary text-white">
+    <div class="card-body">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h5 class="mb-2">📅 Tus días de vacaciones</h5>
+          <p class="mb-0">
+            Tienes derecho a <strong>15 días hábiles</strong> de vacaciones por cada año trabajado.
+          </p>
+        </div>
+        <div class="col-md-4 text-center">
+          <h2 class="display-4 mb-0" id="diasDisponibles">15</h2>
+          <small>Días disponibles</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÓN NUEVA SOLICITUD -->
+  <div class="mb-4">
+    <button class="btn btn-success btn-lg" onclick="abrirModalNuevo()">
+       Solicitar Vacaciones
+    </button>
+  </div>
+
+  <!-- ALERTAS -->
+  <div id="alertContainer"></div>
+
+  <!-- ESTADÍSTICAS RÁPIDAS -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card shadow-sm text-center">
+        <div class="card-body">
+          <h6 class="text-muted"> Pendientes</h6>
+          <h2 id="statPendientes" class="mb-0 text-warning">0</h2>
+          <small class="text-muted">Esperando aprobación</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm text-center">
+        <div class="card-body">
+          <h6 class="text-muted"> Aprobadas</h6>
+          <h2 id="statAprobados" class="mb-0 text-success">0</h2>
+          <small class="text-muted">Vacaciones autorizadas</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm text-center">
+        <div class="card-body">
+          <h6 class="text-muted"> Rechazadas</h6>
+          <h2 id="statRechazados" class="mb-0 text-danger">0</h2>
+          <small class="text-muted">No autorizadas</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS SIMPLIFICADOS -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label"> Filtrar por Estado</label>
+          <select id="filtroEstado"
+                  class="form-select"
+                  onchange="filtrarVacaciones()">
+            <option value="">Todas mis vacaciones</option>
+            <option value="PENDIENTE"> Pendientes</option>
+            <option value="APROBADO"> Aprobadas</option>
+            <option value="RECHAZADO"> Rechazadas</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LISTA DE VACACIONES -->
+  <div class="row" id="listaVacaciones">
+    <div class="col-12 text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL NUEVA SOLICITUD -->
+<div class="modal fade" id="modalVacacion" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"> Solicitar Vacaciones</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formVacacion">
+
+          <div class="mb-3">
+            <label class="form-label"> Fecha Inicio <span class="text-danger">*</span></label>
+            <input type="date"
+                   id="fechaInicio"
+                   class="form-control"
+                   onchange="calcularDias()"
+                   required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label"> Fecha Fin <span class="text-danger">*</span></label>
+            <input type="date"
+                   id="fechaFin"
+                   class="form-control"
+                   onchange="calcularDias()"
+                   required>
+          </div>
+
+          <div class="mb-3">
+            <div class="alert alert-info">
+              <strong> Días solicitados:</strong>
+              <span id="diasCalculados" class="fs-5">0</span> días
+            </div>
+          </div>
+
+          <div class="alert alert-warning">
+            <strong> Importante:</strong>
+            <ul class="mb-0">
+              <li>Las vacaciones se calculan en días calendario (incluyendo fines de semana)</li>
+              <li>Tienes <strong id="diasDisponibles2">15</strong> días disponibles al año</li>
+              <li>Tu solicitud será revisada por RRHH</li>
+            </ul>
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-success" onclick="enviarSolicitud()">
+           Enviar Solicitud
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER DETALLE -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"> Detalle de Vacaciones</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="detalleVacacion">
+        <!-- Se llena dinámicamente -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let modalVacacion;
+  let modalDetalle;
+  let todasLasVacaciones = [];
+  let diasDisponibles = 15; // Por defecto
+
+  // Inicializar
+  document.addEventListener('DOMContentLoaded', function() {
+      modalVacacion = new bootstrap.Modal(document.getElementById('modalVacacion'));
+      modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalle'));
+
+      cargarMisVacaciones();
+      cargarDiasDisponibles();
+  });
+
+  // Cargar días disponibles
+  function cargarDiasDisponibles() {
+      // Aquí se podría hacer fetch a un endpoint que calcule los días
+      // Por ahora usamos el valor por defecto de 15 días
+      document.getElementById('diasDisponibles').textContent = diasDisponibles;
+      document.getElementById('diasDisponibles2').textContent = diasDisponibles;
+  }
+
+  // Cargar vacaciones del empleado
+  function cargarMisVacaciones() {
+      fetch('/api/vacaciones/mis-vacaciones')
+          .then(response => response.json())
+          .then(data => {
+              todasLasVacaciones = data;
+              renderizarVacaciones(data);
+              calcularEstadisticas(data);
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              document.getElementById('listaVacaciones').innerHTML = `
+                  <div class="col-12">
+                      <div class="alert alert-danger">
+                          Error al cargar vacaciones
+                      </div>
+                  </div>
+              `;
+          });
+  }
+
+  // Renderizar vacaciones como cards
+  function renderizarVacaciones(vacaciones) {
+      const container = document.getElementById('listaVacaciones');
+
+      if (vacaciones.length === 0) {
+          container.innerHTML = `
+              <div class="col-12">
+                  <div class="alert alert-info text-center">
+                       No tienes vacaciones solicitadas aún.
+                      <br>
+                      Click en "Solicitar Vacaciones" para crear una solicitud.
+                  </div>
+              </div>
+          `;
+          return;
+      }
+
+      container.innerHTML = vacaciones.map(v => {
+          return `
+              <div class="col-md-6 col-lg-4 mb-3">
+                  <div class="card shadow-sm h-100">
+                      <div class="card-body">
+                          <div class="d-flex justify-content-between align-items-start mb-2">
+                              <h6 class="card-title mb-0">Vacaciones #${v.id}</h6>
+                              <span class="badge ${getBadgeClass(v.estado)}">
+                                  ${getEstadoIcon(v.estado)} ${v.estado}
+                              </span>
+                          </div>
+
+                          <hr>
+
+                          <p class="mb-2">
+                              <strong> Inicio:</strong> ${formatearFecha(v.fechaInicio)}
+                          </p>
+                          <p class="mb-2">
+                              <strong> Fin:</strong> ${formatearFecha(v.fechaFin)}
+                          </p>
+                          <p class="mb-2">
+                              <strong> Días:</strong> ${v.diasSolicitados} día(s)
+                          </p>
+
+                          ${v.estado === 'APROBADO' ? `
+                              <div class="alert alert-success p-2 mt-2">
+                                  <small> ¡Aprobadas! Disfruta tus vacaciones</small>
+                              </div>
+                          ` : ''}
+
+                          ${v.estado === 'RECHAZADO' ? `
+                              <div class="alert alert-danger p-2 mt-2">
+                                  <small> Solicitud no aprobada</small>
+                              </div>
+                          ` : ''}
+
+                          <div class="text-end mt-3">
+                              <button class="btn btn-sm btn-outline-primary"
+                                      onclick="verDetalle(${v.id})">
+                                   Ver detalle
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          `;
+      }).join('');
+  }
+
+  // Formatear fecha
+  function formatearFecha(fecha) {
+      const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', opciones);
+  }
+
+  // Obtener clase de badge
+  function getBadgeClass(estado) {
+      switch(estado) {
+          case 'PENDIENTE': return 'bg-warning';
+          case 'APROBADO': return 'bg-success';
+          case 'RECHAZADO': return 'bg-danger';
+          default: return 'bg-secondary';
+      }
+  }
+
+  // Obtener ícono de estado
+  function getEstadoIcon(estado) {
+      switch(estado) {
+          case 'PENDIENTE': return '⏳';
+          case 'APROBADO': return '✅';
+          case 'RECHAZADO': return '❌';
+          default: return '🏖️';
+      }
+  }
+
+  // Calcular estadísticas
+  function calcularEstadisticas(vacaciones) {
+      const stats = {
+          pendientes: vacaciones.filter(v => v.estado === 'PENDIENTE').length,
+          aprobados: vacaciones.filter(v => v.estado === 'APROBADO').length,
+          rechazados: vacaciones.filter(v => v.estado === 'RECHAZADO').length
+      };
+
+      document.getElementById('statPendientes').textContent = stats.pendientes;
+      document.getElementById('statAprobados').textContent = stats.aprobados;
+      document.getElementById('statRechazados').textContent = stats.rechazados;
+  }
+
+  // Filtrar vacaciones
+  function filtrarVacaciones() {
+      const estado = document.getElementById('filtroEstado').value;
+
+      let vacacionesFiltradas = todasLasVacaciones;
+
+      if (estado) {
+          vacacionesFiltradas = todasLasVacaciones.filter(v => v.estado === estado);
+      }
+
+      renderizarVacaciones(vacacionesFiltradas);
+  }
+
+  // Abrir modal nuevo
+  function abrirModalNuevo() {
+      document.getElementById('formVacacion').reset();
+      document.getElementById('diasCalculados').textContent = '0';
+
+      // Establecer fecha mínima (hoy)
+      const hoy = new Date().toISOString().split('T')[0];
+      document.getElementById('fechaInicio').min = hoy;
+      document.getElementById('fechaFin').min = hoy;
+
+      modalVacacion.show();
+  }
+
+  // Calcular días
+  function calcularDias() {
+      const inicio = document.getElementById('fechaInicio').value;
+      const fin = document.getElementById('fechaFin').value;
+
+      if (!inicio || !fin) {
+          document.getElementById('diasCalculados').textContent = '0';
+          return;
+      }
+
+      const fechaInicio = new Date(inicio + 'T00:00:00');
+      const fechaFin = new Date(fin + 'T00:00:00');
+
+      if (fechaFin < fechaInicio) {
+          document.getElementById('diasCalculados').textContent = '0';
+          return;
+      }
+
+      const diferencia = fechaFin - fechaInicio;
+      const dias = Math.ceil(diferencia / (1000 * 60 * 60 * 24)) + 1;
+
+      document.getElementById('diasCalculados').textContent = dias;
+  }
+
+  // Enviar solicitud
+  function enviarSolicitud() {
+      const fechaInicio = document.getElementById('fechaInicio').value;
+      const fechaFin = document.getElementById('fechaFin').value;
+
+      // Validaciones
+      if (!fechaInicio || !fechaFin) {
+          mostrarAlerta('Por favor selecciona las fechas', 'warning');
+          return;
+      }
+
+      if (new Date(fechaFin) < new Date(fechaInicio)) {
+          mostrarAlerta('La fecha fin no puede ser anterior a la fecha inicio', 'danger');
+          return;
+      }
+
+      const fechaInicioObj = new Date(fechaInicio + 'T00:00:00');
+      const fechaFinObj = new Date(fechaFin + 'T00:00:00');
+      const diasSolicitados = Math.ceil((fechaFinObj - fechaInicioObj) / (1000 * 60 * 60 * 24)) + 1;
+
+      if (diasSolicitados > diasDisponibles) {
+          mostrarAlerta(`Solo tienes ${diasDisponibles} días disponibles. Estás solicitando ${diasSolicitados} días.`, 'warning');
+          return;
+      }
+
+      // Enviar al backend
+      const vacacion = {
+          fechaInicio: fechaInicio,
+          fechaFin: fechaFin,
+          diasSolicitados: diasSolicitados
+      };
+
+      fetch('/api/vacaciones/solicitar', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(vacacion)
+      })
+      .then(response => {
+          if (!response.ok) {
+              return response.text().then(text => {
+                  throw new Error(text);
+              });
+          }
+          return response.json();
+      })
+      .then(data => {
+          modalVacacion.hide();
+          mostrarAlerta('✅ Vacaciones solicitadas correctamente. Espera la aprobación de RRHH.', 'success');
+          cargarMisVacaciones();
+      })
+      .catch(error => {
+          mostrarAlerta('❌ Error: ' + error.message, 'danger');
+      });
+  }
+
+  // Ver detalle
+  function verDetalle(id) {
+      const vacacion = todasLasVacaciones.find(v => v.id === id);
+      if (!vacacion) return;
+
+      document.getElementById('detalleVacacion').innerHTML = `
+          <div class="mb-3">
+              <strong>Estado:</strong>
+              <span class="badge ${getBadgeClass(vacacion.estado)} ms-2">
+                  ${getEstadoIcon(vacacion.estado)} ${vacacion.estado}
+              </span>
+          </div>
+          <div class="mb-3">
+              <strong>Fecha Inicio:</strong> ${formatearFecha(vacacion.fechaInicio)}
+          </div>
+          <div class="mb-3">
+              <strong>Fecha Fin:</strong> ${formatearFecha(vacacion.fechaFin)}
+          </div>
+          <div class="mb-3">
+              <strong>Días Solicitados:</strong> ${vacacion.diasSolicitados} día(s)
+          </div>
+          ${vacacion.estado === 'APROBADO' ? `
+              <div class="alert alert-success">
+                  ✅ Tus vacaciones han sido aprobadas. ¡Disfrútalas!
+              </div>
+          ` : ''}
+          ${vacacion.estado === 'RECHAZADO' ? `
+              <div class="alert alert-danger">
+                  ❌ Lamentablemente tu solicitud no fue aprobada. Contacta a RRHH para más información.
+              </div>
+          ` : ''}
+          ${vacacion.estado === 'PENDIENTE' ? `
+              <div class="alert alert-warning">
+                  ⏳ Tu solicitud está siendo revisada por RRHH.
+              </div>
+          ` : ''}
+      `;
+
+      modalDetalle.show();
+  }
+
+  // Mostrar alerta
+  function mostrarAlerta(mensaje, tipo) {
+      const container = document.getElementById('alertContainer');
+      container.innerHTML = `
+          <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+              ${mensaje}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+      `;
+
+      // Auto-ocultar después de 5 segundos
+      setTimeout(() => {
+          container.innerHTML = '';
+      }, 5000);
+  }
+
+  // Actualizar fecha fin mínima cuando cambia fecha inicio
+  document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('fechaInicio').addEventListener('change', function() {
+          document.getElementById('fechaFin').min = this.value;
+      });
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
