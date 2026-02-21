@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Mis Permisos</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="shortcut icon" href="/img/icono-rrhh.jpg" type="image/jpg">
+
+    <style>
+        .badge-estado {
+            font-size: 0.9rem;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="mb-0"> Mis Permisos</h3>
+            <small class="text-muted">Solicitar y gestionar tus permisos</small>
+        </div>
+        <div>
+            <a href="/index" class="btn btn-outline-secondary">
+                 Volver al inicio
+            </a>
+        </div>
+    </div>
+
+    <!-- BOTÓN NUEVO PERMISO -->
+    <div class="mb-4">
+        <button class="btn btn-primary btn-lg" onclick="abrirModalNuevo()">
+             Solicitar Nuevo Permiso
+        </button>
+    </div>
+
+    <!-- ALERTAS -->
+    <div id="alertContainer"></div>
+
+    <!-- ESTADÍSTICAS RÁPIDAS - SOLO DEL EMPLEADO -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h6 class="text-muted"> Pendientes</h6>
+                    <h2 id="statPendientes" class="mb-0 text-warning">0</h2>
+                    <small class="text-muted">Esperando aprobación</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h6 class="text-muted"> Aprobados</h6>
+                    <h2 id="statAprobados" class="mb-0 text-success">0</h2>
+                    <small class="text-muted">Permisos autorizados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h6 class="text-muted"> Rechazados</h6>
+                    <h2 id="statRechazados" class="mb-0 text-danger">0</h2>
+                    <small class="text-muted">No autorizados</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTROS SIMPLIFICADOS -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label"> Filtrar por Estado</label>
+                    <select id="filtroEstado"
+                            class="form-select"
+                            onchange="filtrarPermisos()">
+                        <option value="">Todos mis permisos</option>
+                        <option value="PENDIENTE"> Pendientes</option>
+                        <option value="APROBADO"> Aprobados</option>
+                        <option value="RECHAZADO"> Rechazados</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTA DE PERMISOS -->
+    <div class="row" id="listaPermisos">
+        <div class="col-12 text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL NUEVO PERMISO -->
+<div class="modal fade" id="modalPermiso" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"> Solicitar Permiso</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formPermiso">
+
+                    <div class="mb-3">
+                        <label class="form-label"> Fecha Inicio <span class="text-danger">*</span></label>
+                        <input type="date"
+                               id="fechaInicio"
+                               class="form-control"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"> Fecha Fin <span class="text-danger">*</span></label>
+                        <input type="date"
+                               id="fechaFin"
+                               class="form-control"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"> Motivo <span class="text-danger">*</span></label>
+                        <textarea id="motivo"
+                                  class="form-control"
+                                  rows="3"
+                                  placeholder="Describe el motivo de tu permiso..."
+                                  required></textarea>
+                        <small class="text-muted">Ej: Cita médica, trámite personal, etc.</small>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>ℹ Nota:</strong> Tu permiso será revisado por RRHH.
+                        Recibirás una notificación cuando sea aprobado o rechazado.
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="enviarSolicitud()">
+                     Enviar Solicitud
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL VER DETALLE -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"> Detalle del Permiso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detallePermiso">
+                <!-- Se llena dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let modalPermiso;
+    let modalDetalle;
+    let todosLosPermisos = [];
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        modalPermiso = new bootstrap.Modal(document.getElementById('modalPermiso'));
+        modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalle'));
+
+        cargarMisPermisos();
+    });
+
+    // Cargar permisos del empleado
+    function cargarMisPermisos() {
+        fetch('/api/permisos/mis-permisos')
+            .then(response => response.json())
+            .then(data => {
+                todosLosPermisos = data;
+                renderizarPermisos(data);
+                calcularEstadisticas(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('listaPermisos').innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-danger">
+                            Error al cargar permisos
+                        </div>
+                    </div>
+                `;
+            });
+    }
+
+    // Renderizar permisos como cards
+    function renderizarPermisos(permisos) {
+        const container = document.getElementById('listaPermisos');
+
+        if (permisos.length === 0) {
+            container.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                         No tienes permisos solicitados aún.
+                        <br>
+                        Click en "Solicitar Nuevo Permiso" para crear uno.
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = permisos.map(p => {
+            const diasDuracion = calcularDias(p.fechaInicio, p.fechaFin);
+
+            return `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title mb-0">Permiso #${p.id}</h6>
+                                <span class="badge ${getBadgeClass(p.estado)}">
+                                    ${getEstadoIcon(p.estado)} ${p.estado}
+                                </span>
+                            </div>
+
+                            <hr>
+
+                            <p class="mb-2">
+                                <strong> Inicio:</strong> ${formatearFecha(p.fechaInicio)}
+                            </p>
+                            <p class="mb-2">
+                                <strong> Fin:</strong> ${formatearFecha(p.fechaFin)}
+                            </p>
+                            <p class="mb-2">
+                                <strong>⏱ Duración:</strong> ${diasDuracion} día(s)
+                            </p>
+                            <p class="mb-2">
+                                <strong> Motivo:</strong><br>
+                                <small class="text-muted">${p.motivo}</small>
+                            </p>
+
+                            <div class="text-end mt-3">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        onclick="verDetalle(${p.id})">
+                                     Ver detalle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Calcular días entre fechas
+    function calcularDias(inicio, fin) {
+        const fechaInicio = new Date(inicio + 'T00:00:00');
+        const fechaFin = new Date(fin + 'T00:00:00');
+        const diferencia = fechaFin - fechaInicio;
+        return Math.ceil(diferencia / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+    // Formatear fecha
+    function formatearFecha(fecha) {
+        const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', opciones);
+    }
+
+    // Obtener clase de badge
+    function getBadgeClass(estado) {
+        switch(estado) {
+            case 'PENDIENTE': return 'bg-warning';
+            case 'APROBADO': return 'bg-success';
+            case 'RECHAZADO': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
+
+    // Obtener ícono de estado
+    function getEstadoIcon(estado) {
+        switch(estado) {
+            case 'PENDIENTE': return '⏳';
+            case 'APROBADO': return '✅';
+            case 'RECHAZADO': return '❌';
+            default: return '📄';
+        }
+    }
+
+    // Calcular estadísticas
+    function calcularEstadisticas(permisos) {
+        const stats = {
+            pendientes: permisos.filter(p => p.estado === 'PENDIENTE').length,
+            aprobados: permisos.filter(p => p.estado === 'APROBADO').length,
+            rechazados: permisos.filter(p => p.estado === 'RECHAZADO').length
+        };
+
+        document.getElementById('statPendientes').textContent = stats.pendientes;
+        document.getElementById('statAprobados').textContent = stats.aprobados;
+        document.getElementById('statRechazados').textContent = stats.rechazados;
+    }
+
+    // Filtrar permisos
+    function filtrarPermisos() {
+        const estado = document.getElementById('filtroEstado').value;
+
+        let permisosFiltrados = todosLosPermisos;
+
+        if (estado) {
+            permisosFiltrados = todosLosPermisos.filter(p => p.estado === estado);
+        }
+
+        renderizarPermisos(permisosFiltrados);
+    }
+
+    // Abrir modal nuevo permiso
+    function abrirModalNuevo() {
+        document.getElementById('formPermiso').reset();
+
+        // Establecer fecha mínima (hoy)
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaInicio').min = hoy;
+        document.getElementById('fechaFin').min = hoy;
+
+        modalPermiso.show();
+    }
+
+    // Enviar solicitud
+    function enviarSolicitud() {
+        const fechaInicio = document.getElementById('fechaInicio').value;
+        const fechaFin = document.getElementById('fechaFin').value;
+        const motivo = document.getElementById('motivo').value.trim();
+
+        // Validaciones
+        if (!fechaInicio || !fechaFin || !motivo) {
+            mostrarAlerta('Por favor completa todos los campos', 'warning');
+            return;
+        }
+
+        if (new Date(fechaFin) < new Date(fechaInicio)) {
+            mostrarAlerta('La fecha fin no puede ser anterior a la fecha inicio', 'danger');
+            return;
+        }
+
+        if (motivo.length < 10) {
+            mostrarAlerta('El motivo debe tener al menos 10 caracteres', 'warning');
+            return;
+        }
+
+        // Enviar al backend
+        const permiso = {
+            fechaInicio: fechaInicio,
+            fechaFin: fechaFin,
+            motivo: motivo
+        };
+
+        fetch('/api/permisos/solicitar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(permiso)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(text);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            modalPermiso.hide();
+            mostrarAlerta(' Permiso solicitado correctamente. Espera la aprobación de RRHH.', 'success');
+            cargarMisPermisos();
+        })
+        .catch(error => {
+            mostrarAlerta('❌ Error: ' + error.message, 'danger');
+        });
+    }
+
+    // Ver detalle del permiso
+    function verDetalle(id) {
+        const permiso = todosLosPermisos.find(p => p.id === id);
+        if (!permiso) return;
+
+        const diasDuracion = calcularDias(permiso.fechaInicio, permiso.fechaFin);
+
+        document.getElementById('detallePermiso').innerHTML = `
+            <div class="mb-3">
+                <strong>Estado:</strong>
+                <span class="badge ${getBadgeClass(permiso.estado)} ms-2">
+                    ${getEstadoIcon(permiso.estado)} ${permiso.estado}
+                </span>
+            </div>
+            <div class="mb-3">
+                <strong>Fecha Inicio:</strong> ${formatearFecha(permiso.fechaInicio)}
+            </div>
+            <div class="mb-3">
+                <strong>Fecha Fin:</strong> ${formatearFecha(permiso.fechaFin)}
+            </div>
+            <div class="mb-3">
+                <strong>Duración:</strong> ${diasDuracion} día(s)
+            </div>
+            <div class="mb-3">
+                <strong>Motivo:</strong><br>
+                <p class="text-muted">${permiso.motivo}</p>
+            </div>
+        `;
+
+        modalDetalle.show();
+    }
+
+    // Mostrar alerta
+    function mostrarAlerta(mensaje, tipo) {
+        const container = document.getElementById('alertContainer');
+        container.innerHTML = `
+            <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+                ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+
+        // Auto-ocultar después de 5 segundos
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 5000);
+    }
+
+    // Actualizar fecha fin mínima cuando cambia fecha inicio
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('fechaInicio').addEventListener('change', function() {
+            document.getElementById('fechaFin').min = this.value;
+        });
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
