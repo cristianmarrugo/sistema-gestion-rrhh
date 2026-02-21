@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Gestión de Permisos</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="shortcut icon" href="/img/icono-rrhh.jpg" type="image/jpg">
+
+    <style>
+        .badge-estado {
+            font-size: 0.9rem;
+            padding: 5px 10px;
+        }
+        .permiso-card {
+            transition: all 0.3s;
+        }
+        .permiso-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="mb-0">📋 Gestión de Permisos</h3>
+            <small class="text-muted">Aprobar o rechazar solicitudes de permisos</small>
+        </div>
+        <div>
+            <a href="/index" class="btn btn-outline-secondary">
+                ← Volver al inicio
+            </a>
+        </div>
+    </div>
+
+    <!-- ALERTAS -->
+    <div id="alertContainer"></div>
+
+    <!-- ESTADÍSTICAS GLOBALES -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Solicitudes</h6>
+                    <h2 id="statTotal" class="mb-0">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm text-center border-warning">
+                <div class="card-body">
+                    <h6 class="text-muted"> Pendientes</h6>
+                    <h2 id="statPendientes" class="mb-0 text-warning">0</h2>
+                    <small class="text-muted">Requieren atención</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h6 class="text-muted"> Aprobados</h6>
+                    <h2 id="statAprobados" class="mb-0 text-success">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h6 class="text-muted"> Rechazados</h6>
+                    <h2 id="statRechazados" class="mb-0 text-danger">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label"> Estado</label>
+                    <select id="filtroEstado"
+                            class="form-select"
+                            onchange="filtrarPermisos()">
+                        <option value="">Todos</option>
+                        <option value="PENDIENTE" selected>⏳ Solo Pendientes</option>
+                        <option value="APROBADO"> Aprobados</option>
+                        <option value="RECHAZADO"> Rechazados</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">👤 Empleado</label>
+                    <select id="filtroEmpleado"
+                            class="form-select"
+                            onchange="filtrarPermisos()">
+                        <option value="">Todos los empleados</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label"> Fecha</label>
+                    <select id="filtroFecha"
+                            class="form-select"
+                            onchange="filtrarPermisos()">
+                        <option value="">Todas las fechas</option>
+                        <option value="proximos">Próximos 7 días</option>
+                        <option value="mes">Este mes</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button class="btn btn-outline-secondary w-100" onclick="limpiarFiltros()">
+                         Limpiar filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active"
+                    id="pendientes-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#pendientes"
+                    type="button">
+                ⏳ Pendientes (<span id="countPendientes">0</span>)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    id="todos-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#todos"
+                    type="button">
+                📋 Todos
+            </button>
+        </li>
+    </ul>
+
+    <!-- TAB CONTENT -->
+    <div class="tab-content">
+
+        <!-- TAB PENDIENTES -->
+        <div class="tab-pane fade show active" id="pendientes" role="tabpanel">
+            <div class="row" id="listaPermisosPendientes">
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB TODOS -->
+        <div class="tab-pane fade" id="todos" role="tabpanel">
+            <div class="row" id="listaPermisosTodos">
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MODAL DETALLE Y APROBAR/RECHAZAR -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📄 Detalle del Permiso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detallePermiso">
+                <!-- Se llena dinámicamente -->
+            </div>
+            <div class="modal-footer" id="botonesAccion">
+                <!-- Botones dinámicos según estado -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let modalDetalle;
+    let todosLosPermisos = [];
+    let permisoActual = null;
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalle'));
+
+        cargarEmpleados();
+        cargarPermisos();
+    });
+
+    // Cargar lista de empleados para filtro
+    function cargarEmpleados() {
+        fetch('/api/empleados')
+            .then(response => response.json())
+            .then(empleados => {
+                const select = document.getElementById('filtroEmpleado');
+                empleados.forEach(emp => {
+                    const option = document.createElement('option');
+                    option.value = emp.id;
+                    option.textContent = `${emp.nombre} ${emp.apellido}`;
+                    select.appendChild(option);
+                });
+            });
+    }
+
+    // Cargar todos los permisos
+    function cargarPermisos() {
+        fetch('/api/permisos')
+            .then(response => response.json())
+            .then(data => {
+                todosLosPermisos = data;
+                renderizarPermisos();
+                calcularEstadisticas(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarAlerta('Error al cargar permisos', 'danger');
+            });
+    }
+
+    // Renderizar permisos
+    function renderizarPermisos() {
+        const pendientes = todosLosPermisos.filter(p => p.estado === 'PENDIENTE');
+
+        renderizarLista('listaPermisosPendientes', pendientes);
+        renderizarLista('listaPermisosTodos', todosLosPermisos);
+
+        document.getElementById('countPendientes').textContent = pendientes.length;
+    }
+
+    // Renderizar lista específica
+    function renderizarLista(containerId, permisos) {
+        const container = document.getElementById(containerId);
+
+        if (permisos.length === 0) {
+            container.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        📄 No hay permisos para mostrar
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = permisos.map(p => {
+            const diasDuracion = calcularDias(p.fechaInicio, p.fechaFin);
+            const urgente = esUrgente(p.fechaInicio);
+
+            return `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card shadow-sm permiso-card h-100 ${urgente ? 'border-warning' : ''}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="card-title mb-0">
+                                        ${p.empleado.nombre} ${p.empleado.apellido}
+                                    </h6>
+                                    <small class="text-muted">${p.empleado.cargo ? p.empleado.cargo.nombre : 'Sin cargo'}</small>
+                                </div>
+                                <span class="badge ${getBadgeClass(p.estado)}">
+                                    ${getEstadoIcon(p.estado)} ${p.estado}
+                                </span>
+                            </div>
+
+                            ${urgente ? '<div class="alert alert-warning p-2 mb-2"><small>⚠️ Permiso inicia pronto</small></div>' : ''}
+
+                            <hr>
+
+                            <p class="mb-2">
+                                <strong>📅 Inicio:</strong> ${formatearFecha(p.fechaInicio)}
+                            </p>
+                            <p class="mb-2">
+                                <strong>📅 Fin:</strong> ${formatearFecha(p.fechaFin)}
+                            </p>
+                            <p class="mb-2">
+                                <strong>⏱️ Duración:</strong> ${diasDuracion} día(s)
+                            </p>
+                            <p class="mb-2">
+                                <strong>📝 Motivo:</strong><br>
+                                <small class="text-muted">${truncarTexto(p.motivo, 60)}</small>
+                            </p>
+
+                            <div class="d-grid gap-2 mt-3">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        onclick="verDetalle(${p.id})">
+                                    👁️ Ver detalle
+                                </button>
+                                ${p.estado === 'PENDIENTE' ? `
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-success"
+                                                onclick="aprobarRapido(${p.id})">
+                                            ✅ Aprobar
+                                        </button>
+                                        <button class="btn btn-sm btn-danger"
+                                                onclick="rechazarRapido(${p.id})">
+                                            ❌ Rechazar
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Ver detalle del permiso
+    function verDetalle(id) {
+        permisoActual = todosLosPermisos.find(p => p.id === id);
+        if (!permisoActual) return;
+
+        const diasDuracion = calcularDias(permisoActual.fechaInicio, permisoActual.fechaFin);
+
+        document.getElementById('detallePermiso').innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>👤 Empleado</h6>
+                    <p><strong>${permisoActual.empleado.nombre} ${permisoActual.empleado.apellido}</strong></p>
+                    <p class="text-muted">${permisoActual.empleado.cargo ? permisoActual.empleado.cargo.nombre : 'Sin cargo'}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>📊 Estado Actual</h6>
+                    <span class="badge ${getBadgeClass(permisoActual.estado)} fs-5">
+                        ${getEstadoIcon(permisoActual.estado)} ${permisoActual.estado}
+                    </span>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>📅 Fecha Inicio:</strong><br>${formatearFecha(permisoActual.fechaInicio)}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>📅 Fecha Fin:</strong><br>${formatearFecha(permisoActual.fechaFin)}</p>
+                </div>
+            </div>
+            <p><strong>⏱️ Duración:</strong> ${diasDuracion} día(s)</p>
+            <hr>
+            <p><strong>📝 Motivo:</strong></p>
+            <p class="text-muted">${permisoActual.motivo}</p>
+        `;
+
+        // Botones según estado
+        const botones = document.getElementById('botonesAccion');
+        if (permisoActual.estado === 'PENDIENTE') {
+            botones.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="rechazarPermiso()">
+                    ❌ Rechazar
+                </button>
+                <button type="button" class="btn btn-success" onclick="aprobarPermiso()">
+                    ✅ Aprobar
+                </button>
+            `;
+        } else {
+            botones.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            `;
+        }
+
+        modalDetalle.show();
+    }
+
+    // Aprobar permiso
+    function aprobarPermiso() {
+        if (!permisoActual) return;
+
+        if (!confirm(`¿Aprobar permiso de ${permisoActual.empleado.nombre}?`)) return;
+
+        fetch(`/api/permisos/${permisoActual.id}/aprobar`, {
+            method: 'PUT'
+        })
+        .then(response => response.json())
+        .then(data => {
+            modalDetalle.hide();
+            mostrarAlerta(`✅ Permiso aprobado para ${data.empleado.nombre} ${data.empleado.apellido}`, 'success');
+            cargarPermisos();
+        })
+        .catch(error => {
+            mostrarAlerta('Error al aprobar permiso', 'danger');
+        });
+    }
+
+    // Rechazar permiso
+    function rechazarPermiso() {
+        if (!permisoActual) return;
+
+        if (!confirm(`¿Rechazar permiso de ${permisoActual.empleado.nombre}?`)) return;
+
+        fetch(`/api/permisos/${permisoActual.id}/rechazar`, {
+            method: 'PUT'
+        })
+        .then(response => response.json())
+        .then(data => {
+            modalDetalle.hide();
+            mostrarAlerta(`❌ Permiso rechazado para ${data.empleado.nombre} ${data.empleado.apellido}`, 'warning');
+            cargarPermisos();
+        })
+        .catch(error => {
+            mostrarAlerta('Error al rechazar permiso', 'danger');
+        });
+    }
+
+    // Aprobar rápido
+    function aprobarRapido(id) {
+        const permiso = todosLosPermisos.find(p => p.id === id);
+        if (!permiso || !confirm(`¿Aprobar permiso de ${permiso.empleado.nombre}?`)) return;
+
+        fetch(`/api/permisos/${id}/aprobar`, {
+            method: 'PUT'
+        })
+        .then(response => response.json())
+        .then(() => {
+            mostrarAlerta('✅ Permiso aprobado', 'success');
+            cargarPermisos();
+        });
+    }
+
+    // Rechazar rápido
+    function rechazarRapido(id) {
+        const permiso = todosLosPermisos.find(p => p.id === id);
+        if (!permiso || !confirm(`¿Rechazar permiso de ${permiso.empleado.nombre}?`)) return;
+
+        fetch(`/api/permisos/${id}/rechazar`, {
+            method: 'PUT'
+        })
+        .then(response => response.json())
+        .then(() => {
+            mostrarAlerta('❌ Permiso rechazado', 'warning');
+            cargarPermisos();
+        });
+    }
+
+    // Filtrar permisos
+    function filtrarPermisos() {
+        // Implementar filtros si es necesario
+        cargarPermisos();
+    }
+
+    // Limpiar filtros
+    function limpiarFiltros() {
+        document.getElementById('filtroEstado').value = 'PENDIENTE';
+        document.getElementById('filtroEmpleado').value = '';
+        document.getElementById('filtroFecha').value = '';
+        cargarPermisos();
+    }
+
+    // Calcular días
+    function calcularDias(inicio, fin) {
+        const fechaInicio = new Date(inicio + 'T00:00:00');
+        const fechaFin = new Date(fin + 'T00:00:00');
+        const diferencia = fechaFin - fechaInicio;
+        return Math.ceil(diferencia / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+    // Verificar si es urgente (inicia en menos de 3 días)
+    function esUrgente(fechaInicio) {
+        const hoy = new Date();
+        const inicio = new Date(fechaInicio + 'T00:00:00');
+        const diferencia = inicio - hoy;
+        const diasFaltantes = Math.ceil(diferencia / (1000 * 60 * 60 * 24));
+        return diasFaltantes <= 3 && diasFaltantes >= 0;
+    }
+
+    // Formatear fecha
+    function formatearFecha(fecha) {
+        const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', opciones);
+    }
+
+    // Truncar texto
+    function truncarTexto(texto, max) {
+        return texto.length > max ? texto.substring(0, max) + '...' : texto;
+    }
+
+    // Obtener clase de badge
+    function getBadgeClass(estado) {
+        switch(estado) {
+            case 'PENDIENTE': return 'bg-warning';
+            case 'APROBADO': return 'bg-success';
+            case 'RECHAZADO': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
+
+    // Obtener ícono
+    function getEstadoIcon(estado) {
+        switch(estado) {
+            case 'PENDIENTE': return '⏳';
+            case 'APROBADO': return '✅';
+            case 'RECHAZADO': return '❌';
+            default: return '📄';
+        }
+    }
+
+    // Calcular estadísticas
+    function calcularEstadisticas(permisos) {
+        const stats = {
+            total: permisos.length,
+            pendientes: permisos.filter(p => p.estado === 'PENDIENTE').length,
+            aprobados: permisos.filter(p => p.estado === 'APROBADO').length,
+            rechazados: permisos.filter(p => p.estado === 'RECHAZADO').length
+        };
+
+        document.getElementById('statTotal').textContent = stats.total;
+        document.getElementById('statPendientes').textContent = stats.pendientes;
+        document.getElementById('statAprobados').textContent = stats.aprobados;
+        document.getElementById('statRechazados').textContent = stats.rechazados;
+    }
+
+    // Mostrar alerta
+    function mostrarAlerta(mensaje, tipo) {
+        const container = document.getElementById('alertContainer');
+        container.innerHTML = `
+            <div class="alert alert-${tipo} alert-dismissible fade show">
+                ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        setTimeout(() => container.innerHTML = '', 5000);
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
