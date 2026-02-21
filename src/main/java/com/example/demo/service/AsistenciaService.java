@@ -61,6 +61,43 @@ public class AsistenciaService {
         }
     }
 
+    // 🔁 JOB AUTOMÁTICO PARA MARCAR SALIDAS OLVIDADAS
+    @Scheduled(cron = "0 30 23 * * ?") // Ejecutar a las 23:30 cada día
+    public void marcarSalidasOlvidadas() {
+        LocalDate hoy = LocalDate.now();
+        List<Empleado> empleados = empleadoRepository.findAll();
+
+        for (Empleado empleado : empleados) {
+            if (!empleado.isActivo()) continue;
+
+            // Buscar asistencia de hoy
+            Optional<Asistencia> asistenciaOpt =
+                    asistenciaRepository.findByEmpleadoAndFecha(empleado, hoy);
+
+            if (asistenciaOpt.isPresent()) {
+                Asistencia asistencia = asistenciaOpt.get();
+
+                // Si tiene entrada pero NO tiene salida
+                if (asistencia.getHoraEntrada() != null &&
+                        asistencia.getHoraSalida() == null) {
+
+                    // Validar que tenga horario asignado
+                    if (empleado.getHorario() != null) {
+                        // Marcar salida con la hora esperada del horario
+                        LocalTime horaSalidaEsperada = empleado.getHorario().getHoraSalida();
+                        asistencia.setHoraSalida(horaSalidaEsperada);
+
+                        // Guardar (NO calcular horas extras porque no sabemos si realmente trabajó más)
+                        asistenciaRepository.save(asistencia);
+
+                        System.out.println("✅ Salida automática registrada para: " +
+                                empleado.getNombre() + " a las " + horaSalidaEsperada);
+                    }
+                }
+            }
+        }
+    }
+
     public boolean llegoTardeHoy(Empleado empleado) {
 
         return asistenciaRepository
@@ -229,6 +266,35 @@ public class AsistenciaService {
                 .filter(a -> a.getEmpleado().getId().equals(empleadoId))
                 .filter(a -> a.getFecha().getMonthValue() == mes)
                 .filter(a -> a.getFecha().getYear() == anio)
+                .toList();
+    }
+
+    public List<Asistencia> listarPorMes(int mes, int anio) {
+        return asistenciaRepository.findAll()
+                .stream()
+                .filter(a -> a.getFecha().getMonthValue() == mes &&
+                        a.getFecha().getYear() == anio)
+                .sorted((a, b) -> {
+                    // Ordenar por fecha primero, luego por empleado
+                    int fechaComp = a.getFecha().compareTo(b.getFecha());
+                    if (fechaComp != 0) return fechaComp;
+                    return a.getEmpleado().getNombre().compareTo(b.getEmpleado().getNombre());
+                })
+                .toList();
+    }
+
+    /**
+     * Listar asistencias por rango de fechas
+     */
+    public List<Asistencia> listarPorRango(LocalDate desde, LocalDate hasta) {
+        return asistenciaRepository.findAll()
+                .stream()
+                .filter(a -> !a.getFecha().isBefore(desde) && !a.getFecha().isAfter(hasta))
+                .sorted((a, b) -> {
+                    int fechaComp = a.getFecha().compareTo(b.getFecha());
+                    if (fechaComp != 0) return fechaComp;
+                    return a.getEmpleado().getNombre().compareTo(b.getEmpleado().getNombre());
+                })
                 .toList();
     }
 }
