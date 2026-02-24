@@ -142,7 +142,7 @@ public class ViewController {
         if (session.getAttribute("empleado") == null) {
             return "redirect:/pin";
         }
-        return "dashboard";
+        return "dashboard-powerbi";
     }
 }
 
