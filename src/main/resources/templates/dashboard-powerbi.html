@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Analítico - Power BI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+        background-color: #f5f7fa;
+    }
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .powerbi-container {
+        width: 100%;
+        height: calc(100vh - 200px);
+        min-height: 600px;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        background: white;
+    }
+    .nav-tabs {
+        border: none;
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .nav-tabs .nav-link {
+        border: none;
+        color: #64748b;
+        font-weight: 500;
+        padding: 12px 24px;
+        border-radius: 6px;
+        transition: all 0.3s;
+    }
+    .nav-tabs .nav-link:hover {
+        background-color: #f1f5f9;
+        color: #667eea;
+    }
+    .nav-tabs .nav-link.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .info-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+    }
+    .info-card h6 {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+    .info-card p {
+        color: #334155;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+    .placeholder-message {
+        text-align: center;
+        padding: 100px 20px;
+        color: #64748b;
+    }
+    .placeholder-message i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="mb-0"> </h3>
+    <small class="text-muted"></small>
+  </div>
+  <div>
+    <a href="/index" class="btn btn-outline-secondary">
+       Volver al inicio
+    </a>
+  </div>
+</div>
+<div class="container-fluid mt-3">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <h2 class="mb-2">📊 Dashboard Analítico</h2>
+        <p class="mb-0 opacity-90">Visualización en tiempo real de métricas de recursos humanos</p>
+      </div>
+      <div class="col-md-4 text-end">
+        <button class="btn btn-light" onclick="location.reload()">
+          🔄 Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link active" data-bs-toggle="tab" href="#asistencias" role="tab">
+        ⏰ Asistencias
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#nomina" role="tab">
+        💰 Nómina
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#empleados" role="tab">
+        👥 Empleados
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tendencias" role="tab">
+        📈 Tendencias
+      </a>
+    </li>
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+    <!-- Asistencias -->
+    <div class="tab-pane fade show active" id="asistencias" role="tabpanel">
+      <iframe
+              class="powerbi-container"
+              src="https://app.powerbi.com/view?r=eyJrIjoiYmI4ZWFkZWItZmU1MC00MjAyLTljNzAtYjYwNzhlNjg0YjQ1IiwidCI6IjlkMTJiZjNmLWU0ZjYtNDdhYi05MTJmLTFhMmYwZmM0OGFhNCIsImMiOjR9"
+              allowFullScreen="true">
+      </iframe>
+
+    </div>
+
+    <!-- Nómina -->
+    <div class="tab-pane fade" id="nomina" role="tabpanel">
+      <div class="placeholder-message">
+        <div>💰</div>
+        <h5>Dashboard de Nómina</h5>
+        <p class="text-muted">Análisis de pagos, salarios y horas extras</p>
+      </div>
+    </div>
+
+    <!-- Empleados -->
+    <div class="tab-pane fade" id="empleados" role="tabpanel">
+      <div class="placeholder-message">
+        <div>👥</div>
+        <h5>Dashboard de Empleados</h5>
+        <p class="text-muted">Información de personal activo, cargos y distribución</p>
+      </div>
+    </div>
+
+    <!-- Tendencias -->
+    <div class="tab-pane fade" id="tendencias" role="tabpanel">
+      <div class="placeholder-message">
+        <div>📈</div>
+        <h5>Análisis de Tendencias</h5>
+        <p class="text-muted">Evolución temporal de métricas clave</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
