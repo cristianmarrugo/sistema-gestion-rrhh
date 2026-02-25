@@ -3,7 +3,9 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Horario;
 import com.example.demo.service.HorarioService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +30,8 @@ public class HorarioController {
         return horarioService.obtenerPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+
+
     }
 
     // Crear nuevo horario
@@ -50,7 +54,12 @@ public class HorarioController {
 
     // Eliminar horario
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+    public ResponseEntity<Void> eliminar(@PathVariable Long id, HttpSession session) {
+
+        if ("RRHH".equals(session.getAttribute("rol"))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         if (horarioService.eliminar(id)) {
             return ResponseEntity.noContent().build();
         }
