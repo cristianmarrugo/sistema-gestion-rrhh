@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Configuración del Sistema - RRHH</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+
+<div class="container mt-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>⚙️ Configuración del Sistema</h3>
+        <a href="/index" class="btn btn-secondary"> Volver</a>
+    </div>
+
+    <!-- Alerta de éxito -->
+    <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show">
+        ✅ Configuración guardada correctamente
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="row">
+        <!-- INFORMACIÓN GENERAL -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">🏢 Información de la Empresa</h5>
+                </div>
+                <div class="card-body">
+                    <form action="/configuracion/guardar" method="post">
+
+                        <div class="mb-3">
+                            <label class="form-label">Nombre de la empresa *</label>
+                            <input type="text" name="nombreEmpresa"
+                                   class="form-control"
+                                   value="Mi Empresa RRHH"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Logo de la empresa</label>
+                            <input type="file" name="logo" class="form-control">
+                            <small class="text-muted">Formatos: PNG, JPG (máx 2MB)</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            💾 Guardar información
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONFIGURACIÓN DE ASISTENCIAS -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">⏰ Asistencias y Horarios</h5>
+                </div>
+                <div class="card-body">
+                    <form action="/configuracion/guardar" method="post">
+
+                        <div class="mb-3">
+                            <label class="form-label">Hora de inicio laboral *</label>
+                            <input type="time" name="horaInicioLaboral"
+                                   class="form-control"
+                                   value="08:00"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Minutos de tolerancia para entrada *</label>
+                            <input type="number" name="minutosToleranciaEntrada"
+                                   class="form-control"
+                                   value="15"
+                                   min="0" max="60"
+                                   required>
+                            <small class="text-muted">
+                                Después de estos minutos se marca como tardanza
+                            </small>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox"
+                                   id="salidaAutomatica" checked>
+                            <label class="form-check-label" for="salidaAutomatica">
+                                Marcar salida automática al finalizar horario
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100">
+                            💾 Guardar configuración
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOTIFICACIONES -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">📧 Notificaciones y Emails</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Servidor SMTP</label>
+                            <input type="text" class="form-control"
+                                   placeholder="smtp.gmail.com">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email del sistema</label>
+                            <input type="email" class="form-control"
+                                   placeholder="rrhh@empresa.com">
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox"
+                                   id="notifTardanzas">
+                            <label class="form-check-label" for="notifTardanzas">
+                                Enviar email por tardanzas
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox"
+                                   id="notifPermisos">
+                            <label class="form-check-label" for="notifPermisos">
+                                Notificar solicitudes de permisos
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100">
+                            💾 Guardar notificaciones
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- BACKUP Y SEGURIDAD -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">🔒 Backup y Seguridad</h5>
+                </div>
+                <div class="card-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">Frecuencia de backup automático</label>
+                        <select class="form-select">
+                            <option>Diario</option>
+                            <option>Semanal</option>
+                            <option>Mensual</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <button class="btn btn-info w-100">
+                            💾 Crear backup ahora
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Restaurar desde backup</label>
+                        <input type="file" class="form-control">
+                        <button class="btn btn-warning w-100 mt-2">
+                            📥 Restaurar
+                        </button>
+                    </div>
+
+                    <hr>
+
+                    <div class="alert alert-danger mb-0">
+                        <strong>⚠️ Zona peligrosa</strong>
+                        <button class="btn btn-danger btn-sm w-100 mt-2">
+                            🗑️ Limpiar logs antiguos
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGS DEL SISTEMA -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">📋 Logs del Sistema (Últimos 100)</h5>
+                </div>
+                <div class="card-body">
+                    <div style="max-height: 300px; overflow-y: auto; background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px;">
+                        <div>[2026-02-24 15:30:45] INFO: Usuario ADMIN accedió a configuración</div>
+                        <div>[2026-02-24 15:25:12] INFO: Empleado ID 5 marcó salida</div>
+                        <div>[2026-02-24 15:20:03] WARNING: Empleado ID 3 llegó tarde</div>
+                        <div>[2026-02-24 15:15:00] INFO: Backup automático completado</div>
+                        <div>[2026-02-24 15:00:00] INFO: Sistema iniciado correctamente</div>
+                        <div class="text-muted mt-2">... (Logs más antiguos disponibles en archivo)</div>
+                    </div>
+                    <button class="btn btn-secondary mt-3">
+                        📄 Descargar logs completos
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
