@@ -9,24 +9,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class ViewController {
 
-    @GetMapping("/index")
-    public String index(HttpSession session, Model model) {
-        Empleado empleado = (Empleado) session.getAttribute("empleado");
-
-        if (empleado == null) {
-            return "redirect:/pin";
-        }
-
-        model.addAttribute("empleado", empleado);
-        return "index";
-    }
-
-    @GetMapping("/logout")
-    public String logout(HttpSession session) {
-        session.invalidate();
-        return "redirect:/pin";
-    }
-
     @GetMapping("/asistencia")
     public String asistencia(HttpSession session, Model model) {
         Empleado empleado = (Empleado) session.getAttribute("empleado");
@@ -81,10 +63,13 @@ public class ViewController {
     }
 
     @GetMapping("/horarios")
-    public String horarios(HttpSession session) {
+    public String horarios(HttpSession session, Model model) {
         if (session.getAttribute("empleado") == null) {
             return "redirect:/pin";
         }
+
+        model.addAttribute("rol", session.getAttribute("rol"));
+
         return "horarios";
     }
 
