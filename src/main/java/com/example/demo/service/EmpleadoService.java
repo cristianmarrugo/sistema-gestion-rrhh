@@ -31,6 +31,11 @@ public class EmpleadoService {
         return empleadoRepository.findById(id);
     }
 
+    public Empleado buscarPorDocumento(String documento) {
+        return empleadoRepository.findByDocumento(documento)
+                .orElse(null);
+    }
+
     public List<Empleado> buscar(String query) {
         String q = query.toLowerCase();
         return empleadoRepository.findAll()
