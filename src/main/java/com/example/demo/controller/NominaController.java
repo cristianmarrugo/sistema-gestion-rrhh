@@ -1,6 +1,9 @@
 package com.example.demo.controller;
 
+import com.example.demo.model.Asistencia;
 import com.example.demo.model.Empleado;
+import com.example.demo.model.EstadoAsistencia;
+import com.example.demo.repository.AsistenciaRepository;
 import com.example.demo.repository.EmpleadoRepository;
 import com.example.demo.repository.HoraExtraRepository;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.*;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +28,7 @@ public class NominaController {
 
     private final EmpleadoRepository empleadoRepository;
     private final HoraExtraRepository horaExtraRepository;
+    private final AsistenciaRepository asistenciaRepository; // ⭐ AGREGADO
 
     // =========================================================
     // EXPORTAR NÓMINA EN EXCEL (.xlsx) — BIEN FORMATEADO
@@ -136,6 +141,14 @@ public class NominaController {
             sheet.setColumnWidth(i, anchos[i] * 256);
         }
 
+        // ====== CALCULAR FECHAS DEL MES ======
+        LocalDate hoy = LocalDate.now();
+        LocalDate primerDia = LocalDate.of(hoy.getYear(), hoy.getMonth(), 1);
+        LocalDate ultimoDia = hoy.withDayOfMonth(hoy.lengthOfMonth());
+
+        // ⭐ IMPORTANTE: Solo hasta HOY (no todo el mes futuro)
+        LocalDate fechaHasta = hoy.isBefore(ultimoDia) ? hoy : ultimoDia;
+
         // ====== FILAS DE DATOS ======
         List<Empleado> empleados = empleadoRepository.findAll()
                 .stream()
@@ -154,8 +167,19 @@ public class NominaController {
             double horasExtras = horaExtraRepository.horasExtraMesActual(emp);
             double valorExtras = horaExtraRepository.sumHorasExtras(emp.getId());
 
-            // Calcular tardanzas del mes
-            long tardanzas = 0; // Aquí podrías agregar el conteo real desde AsistenciaRepository
+            // ⭐ CALCULAR DÍAS TRABAJADOS REALES (PRESENTE + TARDANZA)
+            List<Asistencia> asistencias = asistenciaRepository
+                    .findByEmpleadoAndFechaBetween(emp, primerDia, fechaHasta);
+
+            long diasTrabajados = asistencias.stream()
+                    .filter(a -> a.getEstado() == EstadoAsistencia.NORMAL ||
+                            a.getEstado() == EstadoAsistencia.TARDE)
+                    .count();
+
+            // ⭐ CALCULAR TARDANZAS DEL MES
+            long tardanzas = asistencias.stream()
+                    .filter(a -> a.getEstado() == EstadoAsistencia.TARDE)
+                    .count();
 
             Row fila = sheet.createRow(filaActual);
             fila.setHeightInPoints(20);
@@ -186,12 +210,12 @@ public class NominaController {
                     ? emp.getFechaIngreso().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "-");
             cIngreso.setCellStyle(esCentro);
 
-            // Días trabajados (placeholder - 22 días hábiles promedio)
+            // ⭐ Días trabajados REALES
             Cell cDias = fila.createCell(4);
-            cDias.setCellValue(22);
+            cDias.setCellValue(diasTrabajados);
             cDias.setCellStyle(esCentro);
 
-            // Tardanzas
+            // ⭐ Tardanzas REALES
             Cell cTardanzas = fila.createCell(5);
             cTardanzas.setCellValue(tardanzas);
             cTardanzas.setCellStyle(tardanzas > 0 ? styleTardanza : esCentro);
@@ -267,11 +291,9 @@ public class NominaController {
                         "Festivas +75%  |  Salario mínimo 2026: $1.423.500");
         XSSFCellStyle styleNotaLegal = crearEstilo(wb, "FFFFFF", "595959", false, 8, HorizontalAlignment.LEFT);
 
-
         XSSFFont fontNota = wb.createFont();
-        fontNota.setItalic(true);        // Sí existe en Font
+        fontNota.setItalic(true);
         styleNotaLegal.setFont(fontNota);
-
 
         cNotaLegal.setCellStyle(styleNotaLegal);
         sheet.addMergedRegion(new CellRangeAddress(filaActual + 2, filaActual + 2, 0, 9));
@@ -325,13 +347,140 @@ public class NominaController {
         return style;
     }
 
-    private boolean italic; // no se usa directamente, POI usa el font
-
     private byte[] hexToBytes(String hex) {
         int r = Integer.valueOf(hex.substring(0, 2), 16);
         int g = Integer.valueOf(hex.substring(2, 4), 16);
         int b = Integer.valueOf(hex.substring(4, 6), 16);
         return new byte[]{ (byte) r, (byte) g, (byte) b };
+    }
+
+
+    // =========================================================
+// EXPORTAR MI NÓMINA (PDF - Solo para el empleado logueado)
+// =========================================================
+    @GetMapping("/mi-nomina/exportar")
+    public void exportarMiNomina(HttpServletResponse response, HttpSession session) throws Exception {
+        Empleado empleado = (Empleado) session.getAttribute("empleado");
+
+        if (empleado == null) {
+            response.sendError(401, "No autenticado");
+            return;
+        }
+
+        // Preparar respuesta como .xlsx
+        LocalDate hoy = LocalDate.now();
+        String mesAnio = hoy.format(DateTimeFormatter.ofPattern("MMMM_yyyy"));
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition",
+                "attachment; filename=mi_nomina_" + mesAnio + ".xlsx");
+
+        // Crear workbook
+        XSSFWorkbook wb = new XSSFWorkbook();
+        XSSFSheet sheet = wb.createSheet("Mi Nómina");
+
+        // Estilos
+        XSSFCellStyle styleHeader = crearEstilo(wb, "1F3864", "FFFFFF", true, 14, HorizontalAlignment.CENTER);
+        XSSFCellStyle styleLabel = crearEstilo(wb, "2E75B6", "FFFFFF", true, 10, HorizontalAlignment.LEFT);
+        XSSFCellStyle styleValue = crearEstilo(wb, "FFFFFF", "000000", false, 10, HorizontalAlignment.RIGHT);
+        XSSFCellStyle styleMoneda = crearEstilo(wb, "E2EFDA", "000000", false, 11, HorizontalAlignment.RIGHT);
+        styleMoneda.setDataFormat(wb.createDataFormat().getFormat("$#,##0"));
+        XSSFCellStyle styleTotal = crearEstilo(wb, "1F3864", "FFFFFF", true, 12, HorizontalAlignment.RIGHT);
+        styleTotal.setDataFormat(wb.createDataFormat().getFormat("$#,##0"));
+
+        int rowNum = 0;
+
+        // Título
+        Row row0 = sheet.createRow(rowNum++);
+        row0.setHeightInPoints(35);
+        Cell cellTitulo = row0.createCell(0);
+        cellTitulo.setCellValue("MI NÓMINA - " + hoy.format(DateTimeFormatter.ofPattern("MMMM yyyy")).toUpperCase());
+        cellTitulo.setCellStyle(styleHeader);
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 1));
+
+        rowNum++; // Espacio
+
+        // Información personal
+        agregarFila(sheet, rowNum++, "Empleado:", empleado.getNombre() + " " + empleado.getApellido(), styleLabel, styleValue);
+        agregarFila(sheet, rowNum++, "Cargo:", empleado.getCargo() != null ? empleado.getCargo().getNombre() : "Sin cargo", styleLabel, styleValue);
+        agregarFila(sheet, rowNum++, "Documento:", empleado.getDocumento(), styleLabel, styleValue);
+
+        rowNum++; // Espacio
+
+        // Calcular datos
+        LocalDate primerDia = LocalDate.of(hoy.getYear(), hoy.getMonth(), 1);
+        List<Asistencia> asistencias = asistenciaRepository
+                .findByEmpleadoAndFechaBetween(empleado, primerDia, hoy);
+
+        long diasTrabajados = asistencias.stream()
+                .filter(a -> a.getEstado() == EstadoAsistencia.NORMAL ||
+                        a.getEstado() == EstadoAsistencia.TARDE)
+                .count();
+
+        long tardanzas = asistencias.stream()
+                .filter(a -> a.getEstado() == EstadoAsistencia.TARDE)
+                .count();
+
+        double salarioBase = empleado.getCargo() != null ? empleado.getCargo().getSalarioBase() : 0.0;
+        double horasExtras = horaExtraRepository.horasExtraMesActual(empleado);
+        double valorExtras = horaExtraRepository.sumHorasExtras(empleado.getId());
+        double totalPagar = salarioBase + valorExtras;
+
+        // Asistencia
+        agregarFila(sheet, rowNum++, "Días trabajados:", String.valueOf(diasTrabajados), styleLabel, styleValue);
+        agregarFila(sheet, rowNum++, "Tardanzas:", String.valueOf(tardanzas), styleLabel, styleValue);
+
+        rowNum++; // Espacio
+
+        // Salarios
+        Row rowSalBase = sheet.createRow(rowNum++);
+        Cell cellSalLabel = rowSalBase.createCell(0);
+        cellSalLabel.setCellValue("Salario Base:");
+        cellSalLabel.setCellStyle(styleLabel);
+        Cell cellSalValue = rowSalBase.createCell(1);
+        cellSalValue.setCellValue(salarioBase);
+        cellSalValue.setCellStyle(styleMoneda);
+
+        agregarFila(sheet, rowNum++, "Horas extras:", String.format("%.2f h", horasExtras), styleLabel, styleValue);
+
+        Row rowExtras = sheet.createRow(rowNum++);
+        Cell cellExtLabel = rowExtras.createCell(0);
+        cellExtLabel.setCellValue("Valor horas extras:");
+        cellExtLabel.setCellStyle(styleLabel);
+        Cell cellExtValue = rowExtras.createCell(1);
+        cellExtValue.setCellValue(valorExtras);
+        cellExtValue.setCellStyle(styleMoneda);
+
+        rowNum++; // Espacio
+
+        // Total
+        Row rowTotal = sheet.createRow(rowNum++);
+        rowTotal.setHeightInPoints(25);
+        Cell cellTotalLabel = rowTotal.createCell(0);
+        cellTotalLabel.setCellValue("TOTAL A RECIBIR:");
+        cellTotalLabel.setCellStyle(styleTotal);
+        Cell cellTotalValue = rowTotal.createCell(1);
+        cellTotalValue.setCellValue(totalPagar);
+        cellTotalValue.setCellStyle(styleTotal);
+
+        // Ajustar anchos
+        sheet.setColumnWidth(0, 25 * 256);
+        sheet.setColumnWidth(1, 20 * 256);
+
+        // Escribir
+        wb.write(response.getOutputStream());
+        wb.close();
+    }
+
+    // Helper para agregar filas simples
+    private void agregarFila(XSSFSheet sheet, int rowNum, String label, String value,
+                             XSSFCellStyle styleLabel, XSSFCellStyle styleValue) {
+        Row row = sheet.createRow(rowNum);
+        Cell cellLabel = row.createCell(0);
+        cellLabel.setCellValue(label);
+        cellLabel.setCellStyle(styleLabel);
+        Cell cellValue = row.createCell(1);
+        cellValue.setCellValue(value);
+        cellValue.setCellStyle(styleValue);
     }
 }
 
