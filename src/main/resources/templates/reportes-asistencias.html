@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Asistencias</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <style>
+    body {
+        background: #f0f2f5;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin: 30px 0 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .filters-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+
+    .filters-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr) auto auto;
+        gap: 15px;
+        align-items: end;
+    }
+
+    .filter-group label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .filter-group input,
+    .filter-group select {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.95rem;
+        width: 100%;
+    }
+
+    .btn-export {
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .btn-export:hover {
+        background: #059669;
+        color: white;
+    }
+
+    .btn-clear {
+        background: #6b7280;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-clear:hover {
+        background: #4b5563;
+        color: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        border-radius: 12px;
+        padding: 20px;
+        color: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .stat-card.normal { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .stat-card.tarde { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .stat-card.ausente { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+    .stat-card.permiso { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .stat-card.vacaciones { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+
+    .stat-card-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        margin-bottom: 10px;
+        opacity: 0.95;
+    }
+
+    .stat-card-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .table-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    .table-header {
+        background: #2563eb;
+        color: white;
+        padding: 15px 20px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .table-responsive {
+        padding: 0;
+    }
+
+    .table {
+        margin: 0;
+    }
+
+    .table thead th {
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        color: #1e293b;
+        font-weight: 600;
+        font-size: 0.875rem;
+        padding: 12px 16px;
+        white-space: nowrap;
+    }
+
+    .table tbody td {
+        padding: 12px 16px;
+        vertical-align: middle;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .badge-estado {
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-NORMAL { background: #d1fae5; color: #065f46; }
+    .badge-TARDE { background: #fef3c7; color: #92400e; }
+    .badge-AUSENTE { background: #fee2e2; color: #991b1b; }
+    .badge-PERMISO { background: #dbeafe; color: #1e40af; }
+    .badge-VACACIONES { background: #ede9fe; color: #5b21b6; }
+
+    .horario-info {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .horario-real {
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+    .horario-esperado {
+        color: #6b7280;
+        font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container-fluid px-4">
+  <!-- Título -->
+  <h1 class="page-title">
+    📊 Reportes de Asistencia
+  </h1>
+  <a href="/index" class="btn btn-outline-secondary">
+    Volver al inicio
+  </a>
+
+  <!-- Filtros -->
+  <div class="filters-card">
+    <form method="get" action="/reportes/asistencias">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label>📅 Desde</label>
+          <input type="date" name="fechaDesde" class="form-control"
+                 th:value="${fechaDesde != null ? #temporals.format(fechaDesde, 'yyyy-MM-dd') : ''}">
+        </div>
+        <div class="filter-group">
+          <label>📅 Hasta</label>
+          <input type="date" name="fechaHasta" class="form-control"
+                 th:value="${fechaHasta != null ? #temporals.format(fechaHasta, 'yyyy-MM-dd') : #temporals.format(fechaSeleccionada, 'yyyy-MM-dd')}">
+        </div>
+        <div class="filter-group">
+          <label>👤 Empleado</label>
+          <select name="empleadoId" class="form-select">
+            <option value="">Todos</option>
+            <option th:each="emp : ${empleados}"
+                    th:value="${emp.id}"
+                    th:text="${emp.nombre + ' ' + emp.apellido}"
+                    th:selected="${emp.id == empleadoSeleccionado}">
+            </option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>📊 Estado</label>
+          <select name="estado" class="form-select">
+            <option value="TODOS">Todos</option>
+            <option value="NORMAL" th:selected="${estadoSeleccionado == 'NORMAL'}">Normal</option>
+            <option value="TARDE" th:selected="${estadoSeleccionado == 'TARDE'}">Tarde</option>
+            <option value="AUSENTE" th:selected="${estadoSeleccionado == 'AUSENTE'}">Ausente</option>
+            <option value="PERMISO" th:selected="${estadoSeleccionado == 'PERMISO'}">Permiso</option>
+            <option value="VACACIONES" th:selected="${estadoSeleccionado == 'VACACIONES'}">Vacaciones</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-export">
+          📄 Exportar Excel
+        </button>
+        <a href="/reportes/asistencias" class="btn btn-clear">
+          🗑️ Limpiar
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="stats-grid">
+    <div class="stat-card normal">
+      <div class="stat-card-header">✅ Normal</div>
+      <div class="stat-card-number" th:text="${totalNormal}">0</div>
+    </div>
+    <div class="stat-card tarde">
+      <div class="stat-card-header">⏰ Tarde</div>
+      <div class="stat-card-number" th:text="${totalTarde}">0</div>
+    </div>
+    <div class="stat-card ausente">
+      <div class="stat-card-header">❌ Ausente</div>
+      <div class="stat-card-number" th:text="${totalAusente}">0</div>
+    </div>
+    <div class="stat-card permiso">
+      <div class="stat-card-header">📄 Permiso</div>
+      <div class="stat-card-number" th:text="${totalPermiso}">0</div>
+    </div>
+    <div class="stat-card vacaciones">
+      <div class="stat-card-header">🏖️ Vacaciones</div>
+      <div class="stat-card-number" th:text="${totalVacaciones}">0</div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-card">
+    <div class="table-header">
+      📋 Registros de Asistencia
+    </div>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Empleado</th>
+          <th>Documento</th>
+          <th>Entrada</th>
+          <th>Salida</th>
+          <th>Horas</th>
+          <th>Estado</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="reg : ${registros}">
+          <td th:text="${#temporals.format(reg.fecha, 'yyyy-MM-dd')}"></td>
+          <td>
+            <strong th:text="${reg.empleado.nombre + ' ' + reg.empleado.apellido}"></strong>
+          </td>
+          <td th:text="${reg.empleado.documento}"></td>
+          <td>
+            <div class="horario-info">
+              <span class="horario-real" th:text="${reg.horaEntrada != null ? reg.horaEntrada : '-'}"></span>
+              <span class="horario-esperado" th:if="${reg.horaEntradaEsperada != null}"
+                    th:text="'Esperada: ' + ${reg.horaEntradaEsperada}"></span>
+            </div>
+          </td>
+          <td>
+            <div class="horario-info">
+              <span class="horario-real" th:text="${reg.horaSalida != null ? reg.horaSalida : '-'}"></span>
+              <span class="horario-esperado" th:if="${reg.horaSalidaEsperada != null}"
+                    th:text="'Esperada: ' + ${reg.horaSalidaEsperada}"></span>
+            </div>
+          </td>
+          <td th:text="${reg.horasExtras != null && reg.horasExtras > 0 ? reg.horasExtras + ' h' : '-'}"></td>
+          <td>
+                            <span class="badge-estado" th:classappend="'badge-' + ${reg.estado}"
+                                  th:text="${reg.estado}"></span>
+          </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(registros)}">
+          <td colspan="7" class="text-center text-muted py-4">
+            No hay registros para mostrar
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

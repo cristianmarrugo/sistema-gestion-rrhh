@@ -212,5 +212,52 @@ public class AsistenciaController {
                 java.util.Map.of("tuveSalidaAutomatica", tuveSalidaAutomatica)
         );
     }
+
+    /**
+     * ⚠️ AGREGAR ESTOS 2 MÉTODOS AL FINAL DE TU AsistenciaController.java
+     * (Antes de la última llave "}")
+     */
+
+    /**
+     * Ejecutar marcación de ausencias manualmente (SOLO ADMIN)
+     * POST /api/asistencias/ejecutar-job-ausencias
+     */
+    @PostMapping("/ejecutar-job-ausencias")
+    public ResponseEntity<?> ejecutarJobAusencias(HttpSession session) {
+        Empleado usuarioLogueado = (Empleado) session.getAttribute("empleado");
+
+        if (usuarioLogueado == null) {
+            return ResponseEntity.status(401).body("No autenticado");
+        }
+
+        if (!"ADMIN".equals(usuarioLogueado.getRol().toString())) {
+            return ResponseEntity.status(403).body("Solo ADMIN puede ejecutar este job");
+        }
+
+        System.out.println("🔧 [API] Ejecutando job de ausencias MANUALMENTE...");
+        asistenciaService.marcarAusenciasAutomaticas();
+        return ResponseEntity.ok("✅ Job de ausencias ejecutado. Revisa la consola para ver los logs.");
+    }
+
+    /**
+     * Ejecutar marcación de salidas manualmente (SOLO ADMIN)
+     * POST /api/asistencias/ejecutar-job-salidas
+     */
+    @PostMapping("/ejecutar-job-salidas")
+    public ResponseEntity<?> ejecutarJobSalidas(HttpSession session) {
+        Empleado usuarioLogueado = (Empleado) session.getAttribute("empleado");
+
+        if (usuarioLogueado == null) {
+            return ResponseEntity.status(401).body("No autenticado");
+        }
+
+        if (!"ADMIN".equals(usuarioLogueado.getRol().toString())) {
+            return ResponseEntity.status(403).body("Solo ADMIN puede ejecutar este job");
+        }
+
+        System.out.println("🔧 [API] Ejecutando job de salidas MANUALMENTE...");
+        asistenciaService.marcarSalidasOlvidadas();
+        return ResponseEntity.ok("✅ Job de salidas ejecutado. Revisa la consola para ver los logs.");
+    }
 }
 
