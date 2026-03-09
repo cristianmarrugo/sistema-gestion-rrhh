@@ -105,22 +105,22 @@ public class ViewController {
         return "vacaciones-pendientes";
     }
 
-    @GetMapping("/reportes-asistencia")
-    public String reportes(HttpSession session) {
-        Empleado empleado = (Empleado) session.getAttribute("empleado");
-
-        if (empleado == null) {
-            return "redirect:/pin";
-        }
-
-        // Solo ADMIN y RRHH pueden ver reportes
-        if (!"ADMIN".equals(empleado.getRol().toString()) &&
-                !"RRHH".equals(empleado.getRol().toString())) {
-            return "redirect:/index";
-        }
-
-        return "reportes-asistencia";
-    }
+//    @GetMapping("/reportes-asistencia")
+//    public String reportes(HttpSession session) {
+//        Empleado empleado = (Empleado) session.getAttribute("empleado");
+//
+//        if (empleado == null) {
+//            return "redirect:/pin";
+//        }
+//
+//        // Solo ADMIN y RRHH pueden ver reportes
+//        if (!"ADMIN".equals(empleado.getRol().toString()) &&
+//                !"RRHH".equals(empleado.getRol().toString())) {
+//            return "redirect:/index";
+//        }
+//
+//        return "reportes-asistencia";
+//    }
 
     @GetMapping("/dashboard")
     public String dashboard(HttpSession session) {
