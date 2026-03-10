@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Cuadrante Mensual</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <style>
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 5px;
+        margin-top: 20px;
+    }
+
+    .calendar-day {
+        border: 1px solid #ddd;
+        padding: 10px;
+        min-height: 80px;
+        background: white;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .calendar-day:hover {
+        border-color: #667eea;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .calendar-day.empty {
+        background: #f9fafb;
+        cursor: default;
+        border: none;
+    }
+
+    .calendar-day.empty:hover {
+        border: none;
+        box-shadow: none;
+    }
+
+    .day-number {
+        font-weight: bold;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .day-turno {
+        margin-top: 5px;
+        padding: 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+    }
+
+    .day-libre {
+        background: #f3f4f6;
+        color: #9ca3af;
+        font-style: italic;
+    }
+
+    .weekend {
+        background: #f9fafb;
+    }
+
+    .mes-navegacion {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .turno-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        margin: 2px;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid mt-4">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>📅 Cuadrante Mensual de Turnos</h3>
+
+    <div>
+      <strong>👤 <span th:text="${empleado.nombre}"></span></strong><br>
+        <a href="/turnos" class="btn btn-info me-2" th:if="${empleado.rol.toString() == 'ADMIN' || empleado.rol.toString() == 'RRHH'}" >Ver Turnos</a>
+      <a href="/index" class="btn btn-secondary">Volver</a>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show">
+    ✅ Turnos asignados correctamente
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+
+  <div class="row">
+
+    <!-- Panel izquierdo: Selección -->
+    <div class="col-md-3">
+      <div class="card mb-3">
+        <div class="card-header">
+          <h6 class="mb-0">Filtros</h6>
+        </div>
+        <div class="card-body">
+          <form method="get" action="/cuadrantes">
+            <!-- Empleado -->
+            <div class="mb-3" th:if="${empleado.rol.toString() == 'ADMIN' || empleado.rol.toString() == 'RRHH'}">
+              <label>Empleado</label>
+              <select name="empleadoId" class="form-select" required onchange="this.form.submit()">
+                <option value="">Seleccionar...</option>
+                <option th:each="emp : ${empleados}"
+                        th:value="${emp.id}"
+                        th:text="${emp.nombre + ' ' + emp.apellido}"
+                        th:selected="${emp.id == empleadoSeleccionado}">
+                </option>
+              </select>
+            </div>
+
+            <!-- Mes y Año -->
+            <div class="row mb-3">
+              <div class="col-6">
+                <label>Mes</label>
+                <select name="mes" class="form-select" th:value="${mesSeleccionado}">
+                  <option value="1" th:selected="${mesSeleccionado == 1}">Enero</option>
+                  <option value="2" th:selected="${mesSeleccionado == 2}">Febrero</option>
+                  <option value="3" th:selected="${mesSeleccionado == 3}">Marzo</option>
+                  <option value="4" th:selected="${mesSeleccionado == 4}">Abril</option>
+                  <option value="5" th:selected="${mesSeleccionado == 5}">Mayo</option>
+                  <option value="6" th:selected="${mesSeleccionado == 6}">Junio</option>
+                  <option value="7" th:selected="${mesSeleccionado == 7}">Julio</option>
+                  <option value="8" th:selected="${mesSeleccionado == 8}">Agosto</option>
+                  <option value="9" th:selected="${mesSeleccionado == 9}">Septiembre</option>
+                  <option value="10" th:selected="${mesSeleccionado == 10}">Octubre</option>
+                  <option value="11" th:selected="${mesSeleccionado == 11}">Noviembre</option>
+                  <option value="12" th:selected="${mesSeleccionado == 12}">Diciembre</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label>Año</label>
+                <input type="number" name="anio" class="form-control"
+                       th:value="${anioSeleccionado}" min="2020" max="2030">
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Ver Cuadrante</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Leyenda de turnos -->
+      <div class="card" th:if="${empleadoSeleccionado != null}">
+        <div class="card-header">
+          <h6 class="mb-0">Turnos Disponibles</h6>
+        </div>
+        <div class="card-body">
+          <div th:each="turno : ${turnos}" class="mb-2">
+            <span class="turno-badge" th:style="'background-color:' + ${turno.color}">
+              <span th:text="${turno.codigo}"></span>
+            </span>
+            <small th:text="${turno.nombre}"></small>
+            <br>
+            <small class="text-muted"
+                   th:text="${turno.horaEntrada + ' - ' + turno.horaSalida}"></small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones rápidas -->
+      <div class="card mt-3" th:if="${empleadoSeleccionado != null && (empleado.rol.toString() == 'ADMIN' || empleado.rol.toString() == 'RRHH')}">
+        <div class="card-header">
+          <h6 class="mb-0">Asignación Rápida</h6>
+        </div>
+        <div class="card-body">
+          <form th:action="@{/cuadrantes/asignar-fijo}" method="post">
+            <input type="hidden" name="empleadoId" th:value="${empleadoSeleccionado}">
+            <input type="hidden" name="mes" th:value="${mesSeleccionado}">
+            <input type="hidden" name="anio" th:value="${anioSeleccionado}">
+
+            <div class="mb-3">
+              <label>Turno fijo</label>
+              <select name="turnoId" class="form-select" required>
+                <option th:each="turno : ${turnos}"
+                        th:value="${turno.id}"
+                        th:text="${turno.nombre}">
+                </option>
+              </select>
+            </div>
+
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox"
+                     name="incluirFinDeSemana" id="incluirFDS">
+              <label class="form-check-label" for="incluirFDS">
+                Incluir fines de semana
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 btn-sm">
+              Asignar a todo el mes
+            </button>
+          </form>
+
+          <hr>
+
+          <form th:action="@{/cuadrantes/limpiar}" method="post"
+                onsubmit="return confirm('¿Limpiar todas las asignaciones del mes?');">
+            <input type="hidden" name="empleadoId" th:value="${empleadoSeleccionado}">
+            <input type="hidden" name="mes" th:value="${mesSeleccionado}">
+            <input type="hidden" name="anio" th:value="${anioSeleccionado}">
+            <button type="submit" class="btn btn-danger w-100 btn-sm">
+              Limpiar mes
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel derecho: Calendario -->
+    <div class="col-md-9">
+      <div class="card">
+        <div class="card-body">
+
+          <div th:if="${empleadoSeleccionado == null}" class="text-center py-5">
+            <div class="display-1 text-muted">📅</div>
+            <h5 class="mt-3">Selecciona un empleado para ver su cuadrante</h5>
+          </div>
+
+          <div th:if="${empleadoSeleccionado != null}">
+            <!-- Encabezados de días -->
+            <div class="calendar-grid mb-2">
+              <div class="text-center fw-bold">Lun</div>
+              <div class="text-center fw-bold">Mar</div>
+              <div class="text-center fw-bold">Mié</div>
+              <div class="text-center fw-bold">Jue</div>
+              <div class="text-center fw-bold">Vie</div>
+              <div class="text-center fw-bold text-danger">Sáb</div>
+              <div class="text-center fw-bold text-danger">Dom</div>
+            </div>
+
+            <!-- Días del mes CON CORRECCIÓN DE ALINEACIÓN -->
+            <div class="calendar-grid">
+              <!-- Calcular qué día de la semana es el día 1 del mes -->
+              <th:block th:with="primerDia=${T(java.time.LocalDate).of(anioSeleccionado, mesSeleccionado, 1).getDayOfWeek().getValue()}">
+
+                <!-- Días vacíos al inicio del mes -->
+                <div th:each="i : ${#numbers.sequence(1, primerDia - 1)}"
+                     class="calendar-day empty">
+                </div>
+
+                <!-- Días reales del mes -->
+                <div th:each="dia : ${#numbers.sequence(1, diasEnMes)}"
+                     class="calendar-day"
+                     th:classappend="${cuadrante.containsKey(dia) && cuadrante.get(dia).turno == null ? 'day-libre' : ''}"
+                     th:onclick="'editarDia(' + ${dia} + ')'"
+                     th:attr="data-dia=${dia}">
+
+                  <div class="day-number" th:text="${dia}"></div>
+
+                  <div th:if="${cuadrante.containsKey(dia) && cuadrante.get(dia).turno != null}"
+                       class="day-turno"
+                       th:style="'background-color:' + ${cuadrante.get(dia).turno.color}"
+                       th:text="${cuadrante.get(dia).turno.codigo}">
+                  </div>
+
+                  <div th:if="${cuadrante.containsKey(dia) && cuadrante.get(dia).turno == null}"
+                       class="day-turno day-libre">
+                    LIBRE
+                  </div>
+
+                  <div th:if="${!cuadrante.containsKey(dia)}"
+                       class="day-turno"
+                       style="background: #e5e7eb; color: #9ca3af;">
+                    ---
+                  </div>
+                </div>
+
+              </th:block>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para editar día -->
+<div class="modal fade" id="modalEditarDia" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Asignar Turno</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formAsignarDia">
+          <input type="hidden" id="diaSeleccionado">
+
+          <div class="mb-3">
+            <label>Turno</label>
+            <select id="turnoSeleccionado" class="form-select">
+              <option value="0">Día Libre</option>
+              <option th:each="turno : ${turnos}"
+                      th:value="${turno.id}"
+                      th:text="${turno.nombre + ' (' + turno.horaEntrada + ' - ' + turno.horaSalida + ')'}">
+              </option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarDia()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+  const empleadoId = [[${empleadoSeleccionado}]];
+  const mes = [[${mesSeleccionado}]];
+  const anio = [[${anioSeleccionado}]];
+
+  function editarDia(dia) {
+      // Solo ADMIN/RRHH puede editar
+      const rol = '[[${empleado.rol.toString()}]]';
+      if (rol !== 'ADMIN' && rol !== 'RRHH') {
+          return;
+      }
+
+      if (!empleadoId) {
+          alert('Selecciona un empleado primero');
+          return;
+      }
+
+      document.getElementById('diaSeleccionado').value = dia;
+      const modal = new bootstrap.Modal(document.getElementById('modalEditarDia'));
+      modal.show();
+  }
+
+  function guardarDia() {
+      const dia = document.getElementById('diaSeleccionado').value;
+      const turnoId = document.getElementById('turnoSeleccionado').value;
+      const fecha = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+
+      fetch('/cuadrantes/asignar-dia', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `empleadoId=${empleadoId}&turnoId=${turnoId}&fecha=${fecha}`
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              location.reload();
+          } else {
+              alert('Error: ' + data.message);
+          }
+      });
+  }
+</script>
+
+</body>
+</html>
