@@ -30,76 +30,140 @@ public class AsistenciaService {
     @Autowired
     private VacacionRepository vacacionRepository;
 
-    // 🔁 JOB AUTOMÁTICO DE AUSENCIAS
+    @Autowired
+    private TurnoRepository turnoRepository;
+
+    @Autowired
+    TurnoService turnoService;
+
+    // 🔁 JOB AUTOMÁTICO DE AUSENCIAS (23:00 cada día)
     @Scheduled(cron = "0 0 23 * * ?")
     public void marcarAusenciasAutomaticas() {
 
         LocalDate hoy = LocalDate.now();
         List<Empleado> empleados = empleadoRepository.findAll();
 
+        System.out.println("🔄 [JOB AUSENCIAS] Iniciando para " + hoy + " - Total empleados: " + empleados.size());
+
+        int ausenciasMarcadas = 0;
+        int yaRegistrados = 0;
+        int conPermiso = 0;
+        int conVacaciones = 0;
+        int sinHorario = 0;
+
         for (Empleado empleado : empleados) {
 
-            if (!empleado.isActivo()) continue;
+            if (!empleado.isActivo()) {
+                System.out.println("  ⏭️ Saltando empleado inactivo: " + empleado.getNombre());
+                continue;
+            }
 
+            // Verificar si ya marcó asistencia
             boolean yaMarco = asistenciaRepository
                     .findByEmpleadoAndFecha(empleado, hoy)
                     .isPresent();
 
-            boolean tienePermiso =
-                    permisoRepository.existsPermisoActivo(empleado, hoy);
-
-            boolean tieneVacaciones =
-                    vacacionRepository.existsVacacionActiva(empleado, hoy);
-
-            if (!yaMarco && !tienePermiso && !tieneVacaciones) {
-                Asistencia asistencia = new Asistencia();
-                asistencia.setEmpleado(empleado);
-                asistencia.setFecha(hoy);
-                asistencia.setEstado(EstadoAsistencia.AUSENTE);
-                asistenciaRepository.save(asistencia);
+            if (yaMarco) {
+                System.out.println("  ✅ " + empleado.getNombre() + " ya tiene asistencia registrada");
+                yaRegistrados++;
+                continue;
             }
+
+            // Verificar permisos
+            boolean tienePermiso = permisoRepository.existsPermisoActivo(empleado, hoy);
+
+            if (tienePermiso) {
+                System.out.println("  📋 " + empleado.getNombre() + " tiene permiso aprobado");
+                conPermiso++;
+                continue;
+            }
+
+            // Verificar vacaciones
+            boolean tieneVacaciones = vacacionRepository.existsVacacionActiva(empleado, hoy);
+
+            if (tieneVacaciones) {
+                System.out.println("  🏖️ " + empleado.getNombre() + " está de vacaciones");
+                conVacaciones++;
+                continue;
+            }
+
+            // Verificar si tiene turno asignado para hoy
+            Turno turnoDelDia = turnoService.obtenerTurnoEmpleado(empleado.getId(), hoy);
+
+            // Si no tiene turno ni horario fijo, no marcar ausencia
+            if (turnoDelDia == null && empleado.getHorario() == null) {
+                System.out.println("  ⚠️ " + empleado.getNombre() + " no tiene turno ni horario asignado");
+                sinHorario++;
+                continue;
+            }
+
+            // ⭐ MARCAR AUSENCIA
+            Asistencia asistencia = new Asistencia();
+            asistencia.setEmpleado(empleado);
+            asistencia.setFecha(hoy);
+            asistencia.setEstado(EstadoAsistencia.AUSENTE);
+            asistenciaRepository.save(asistencia);
+
+            System.out.println("  ❌ AUSENCIA marcada para: " + empleado.getNombre());
+            ausenciasMarcadas++;
         }
+
+        System.out.println("✅ [JOB AUSENCIAS] Completado:");
+        System.out.println("   - Ausencias marcadas: " + ausenciasMarcadas);
+        System.out.println("   - Ya registrados: " + yaRegistrados);
+        System.out.println("   - Con permiso: " + conPermiso);
+        System.out.println("   - Con vacaciones: " + conVacaciones);
+        System.out.println("   - Sin horario: " + sinHorario);
     }
 
-    // 🔁 JOB AUTOMÁTICO PARA MARCAR SALIDAS OLVIDADAS
-    @Scheduled(cron = "0 30 23 * * ?") // Ejecutar a las 23:30 cada día
+    // 🔁 JOB AUTOMÁTICO PARA MARCAR SALIDAS OLVIDADAS (23:30 cada día)
+    @Scheduled(cron = "0 30 23 * * ?")
     public void marcarSalidasOlvidadas() {
         LocalDate hoy = LocalDate.now();
         List<Empleado> empleados = empleadoRepository.findAll();
 
+        System.out.println("🔄 [JOB SALIDAS] Iniciando para " + hoy);
+
+        int salidasMarcadas = 0;
+
         for (Empleado empleado : empleados) {
             if (!empleado.isActivo()) continue;
 
-            // Buscar asistencia de hoy
             Optional<Asistencia> asistenciaOpt =
                     asistenciaRepository.findByEmpleadoAndFecha(empleado, hoy);
 
             if (asistenciaOpt.isPresent()) {
                 Asistencia asistencia = asistenciaOpt.get();
 
-                // Si tiene entrada pero NO tiene salida
                 if (asistencia.getHoraEntrada() != null &&
                         asistencia.getHoraSalida() == null) {
 
-                    // Validar que tenga horario asignado
-                    if (empleado.getHorario() != null) {
-                        // Marcar salida con la hora esperada del horario
-                        LocalTime horaSalidaEsperada = empleado.getHorario().getHoraSalida();
-                        asistencia.setHoraSalida(horaSalidaEsperada);
+                    // SISTEMA HÍBRIDO: Intentar obtener turno, si no existe usar horario antiguo
+                    Turno turnoDelDia = turnoService.obtenerTurnoEmpleado(empleado.getId(), hoy);
 
-                        // Guardar (NO calcular horas extras porque no sabemos si realmente trabajó más)
-                        asistenciaRepository.save(asistencia);
+                    LocalTime horaSalidaEsperada;
 
-                        System.out.println("✅ Salida automática registrada para: " +
-                                empleado.getNombre() + " a las " + horaSalidaEsperada);
+                    if (turnoDelDia != null) {
+                        horaSalidaEsperada = turnoDelDia.getHoraSalida();
+                    } else if (empleado.getHorario() != null) {
+                        horaSalidaEsperada = empleado.getHorario().getHoraSalida();
+                    } else {
+                        continue; // No tiene horario definido
                     }
+
+                    asistencia.setHoraSalida(horaSalidaEsperada);
+                    asistenciaRepository.save(asistencia);
+
+                    System.out.println("  ✅ Salida automática: " + empleado.getNombre() + " a las " + horaSalidaEsperada);
+                    salidasMarcadas++;
                 }
             }
         }
+
+        System.out.println("✅ [JOB SALIDAS] Completado - Salidas marcadas: " + salidasMarcadas);
     }
 
     public boolean llegoTardeHoy(Empleado empleado) {
-
         return asistenciaRepository
                 .findByEmpleadoAndFecha(empleado, LocalDate.now())
                 .map(a -> a.getEstado() == EstadoAsistencia.TARDE)
@@ -121,11 +185,6 @@ public class AsistenciaService {
             throw new RuntimeException("Empleado inactivo");
         }
 
-        // VALIDAR QUE TENGA HORARIO ASIGNADO
-        if (empleado.getHorario() == null) {
-            throw new RuntimeException("Este empleado no tiene un horario asignado. Contacta a RRHH.");
-        }
-
         LocalDate hoy = LocalDate.now();
         LocalTime ahora = LocalTime.now();
 
@@ -136,9 +195,7 @@ public class AsistenciaService {
         if (asistenciaOpt.isPresent()) {
             Asistencia asistencia = asistenciaOpt.get();
             asistencia.setHoraSalida(ahora);
-
             calcularHorasExtras(asistencia);
-
             return asistenciaRepository.save(asistencia);
         }
 
@@ -148,9 +205,25 @@ public class AsistenciaService {
         asistencia.setFecha(hoy);
         asistencia.setHoraEntrada(ahora);
 
-        LocalTime horaHorario = empleado.getHorario().getHoraEntrada();
-        int tolerancia = empleado.getHorario().getToleranciaMinutos();
+        // SISTEMA HÍBRIDO: Intentar obtener turno, si no existe usar horario antiguo
+        Turno turnoDelDia = turnoService.obtenerTurnoEmpleado(empleado.getId(), hoy);
 
+        LocalTime horaHorario;
+        int tolerancia;
+
+        if (turnoDelDia != null) {
+            // Usar turno asignado (nuevo sistema)
+            horaHorario = turnoDelDia.getHoraEntrada();
+            tolerancia = turnoDelDia.getToleranciaMinutos();
+        } else if (empleado.getHorario() != null) {
+            // Fallback al horario fijo (sistema antiguo)
+            horaHorario = empleado.getHorario().getHoraEntrada();
+            tolerancia = empleado.getHorario().getToleranciaMinutos();
+        } else {
+            throw new RuntimeException("No tienes horario ni turno asignado para hoy. Contacta a RRHH.");
+        }
+
+        // Validar tardanza
         if (ahora.isAfter(horaHorario.plusMinutes(tolerancia))) {
             asistencia.setEstado(EstadoAsistencia.TARDE);
         } else {
@@ -165,12 +238,24 @@ public class AsistenciaService {
 
         if (asistencia.getHoraSalida() == null) return;
 
-        // Validar que el empleado tenga horario
-        if (asistencia.getEmpleado().getHorario() == null) return;
+        // SISTEMA HÍBRIDO: Intentar obtener turno, si no existe usar horario antiguo
+        Turno turnoDelDia = turnoService.obtenerTurnoEmpleado(
+                asistencia.getEmpleado().getId(),
+                asistencia.getFecha()
+        );
 
-        Horario horario = asistencia.getEmpleado().getHorario();
+        LocalTime salidaHorario;
 
-        LocalTime salidaHorario = horario.getHoraSalida();
+        if (turnoDelDia != null) {
+            // Usar turno asignado
+            salidaHorario = turnoDelDia.getHoraSalida();
+        } else if (asistencia.getEmpleado().getHorario() != null) {
+            // Fallback al horario fijo
+            salidaHorario = asistencia.getEmpleado().getHorario().getHoraSalida();
+        } else {
+            return; // No tiene horario definido
+        }
+
         LocalTime salidaReal = asistencia.getHoraSalida();
 
         if (salidaReal.isAfter(salidaHorario)) {
@@ -210,6 +295,18 @@ public class AsistenciaService {
      */
     public Optional<Asistencia> obtenerPorId(Long id) {
         return asistenciaRepository.findById(id);
+    }
+
+    public List<Asistencia> obtenerPorEmpleadoYRangoFechas(Long empleadoId, LocalDate desde, LocalDate hasta) {
+        Empleado empleado = empleadoRepository.findById(empleadoId).orElse(null);
+        if (empleado == null) return List.of();
+
+        return asistenciaRepository.findAll()
+                .stream()
+                .filter(a -> a.getEmpleado().getId().equals(empleadoId))
+                .filter(a -> !a.getFecha().isBefore(desde) && !a.getFecha().isAfter(hasta))
+                .sorted((a, b) -> a.getFecha().compareTo(b.getFecha()))
+                .toList();
     }
 
     /**
