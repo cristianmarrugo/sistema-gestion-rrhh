@@ -72,7 +72,7 @@
                     <h5>Permisos</h5>
                     <p class="text-muted">Solicitar permisos</p>
                     <a href="/permisos" class="btn btn-info">
-                        Gestionar
+                        Solicitar
                     </a>
                 </div>
             </div>
@@ -86,7 +86,7 @@
                     <h5>Vacaciones</h5>
                     <p class="text-muted">Solicitar vacaciones</p>
                     <a href="/vacaciones" class="btn btn-success">
-                        Gestionar
+                        Solicitar
                     </a>
                 </div>
             </div>
@@ -113,8 +113,8 @@
                 <div class="card-body text-center">
                     <div class="display-4 mb-3">🕐</div>
                     <h5>Mi Horario</h5>
-                    <p class="text-muted">Ver mi horario de trabajo</p>
-                    <a href="/mi-horario" class="btn btn-secondary">Ver horario</a>
+                    <p class="text-muted">Ver mi cuadrante</p>
+                    <a href="/cuadrantes" class="btn btn-secondary">Ver horario</a>
                 </div>
             </div>
         </div>
@@ -126,7 +126,7 @@
                     <div class="display-4 mb-3">💰</div>
                     <h5>Mi Nómina</h5>
                     <p class="text-muted">Ver mis pagos</p>
-                    <a href="/mi-nomina" class="btn btn-success">Ver nómina</a>
+                    <a href="/nomina/mi-nomina" class="btn btn-success">Ver nómina</a>
                 </div>
             </div>
         </div>
@@ -167,6 +167,7 @@
             </div>
         </div>
 
+        <!--
         <div class="col-md-3">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center">
@@ -179,6 +180,7 @@
                 </div>
             </div>
         </div>
+        -->
 
         <!-- Aprobar Permisos -->
         <div class="col-md-3">
@@ -215,7 +217,7 @@
                     <div class="display-4 mb-3">📊</div>
                     <h5>Reportes</h5>
                     <p class="text-muted">Asistencias y nómina</p>
-                    <a href="/reportes-asistencia" class="btn btn-secondary">
+                    <a href="reportes/asistencias" class="btn btn-secondary">
                         Ver reportes
                     </a>
                 </div>
@@ -251,6 +253,30 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-md-3" th:if="${empleado.rol.toString() == 'ADMIN' || empleado.rol.toString() == 'RRHH'}">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-3"> 🕐</div>
+                    <h5>Horarios y turnos</h5>
+                    <a href="/turnos" class="btn btn-secondary">
+                        🔄 Gestionar Turnos
+                    </a>
+                    <br>
+                    <!-- Cuadrantes (asignar turnos) -->
+                    <a href="/cuadrantes" class="btn btn-secondary">
+                        📅 Cuadrantes Mensuales
+                    </a>
+                    <br>
+                    <!-- Horarios fijos (sistema antiguo) -->
+                    <a href="/horarios" class="btn btn-secondary">
+                        🕐 Horarios Fijos (Antiguo)
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN DE HORARIOS Y TURNOS -->
 
     </div>
 
@@ -301,6 +327,7 @@
         </div>
 
         <!-- Gestionar Horarios -->
+        <!--
         <div class="col-md-3">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center">
@@ -313,7 +340,7 @@
                 </div>
             </div>
         </div>
-
+        -->
         <!-- Dashboard Power BI -->
         <div class="col-md-3">
             <div class="card shadow-sm h-100">
@@ -398,6 +425,29 @@
             </div>
         </div>
 
+        <div class="col-md-3" th:if="${empleado.rol.toString() == 'ADMIN' || empleado.rol.toString() == 'RRHH'}">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-3"> 🕐</div>
+                    <h5>Horarios y turnos</h5>
+                    <a href="/turnos" class="btn btn-secondary">
+                        🔄 Gestionar Turnos
+                    </a>
+                    <br>
+                    <!-- Cuadrantes (asignar turnos) -->
+                    <a href="/cuadrantes" class="btn btn-secondary">
+                        📅 Cuadrantes Mensuales
+                    </a>
+                    <br>
+                    <!-- Horarios fijos (sistema antiguo) -->
+                    <a href="/horarios" class="btn btn-secondary">
+                        🕐 Horarios Fijos (Antiguo)
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN DE HORARIOS Y TURNOS -->
     </div>
 
 </div>
