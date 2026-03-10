@@ -16,7 +16,14 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // 🔥 Permitimos todo
+                        // Rutas públicas (sin autenticación)
+                        .requestMatchers("/login", "/logout", "/css/**", "/js/**", "/images/**").permitAll()
+
+                        // Rutas de ADMIN y RRHH
+                        .requestMatchers("/turnos/**", "/cuadrantes/**").permitAll() // ← TEMPORAL: Permite todo
+
+                        // Todas las demás rutas permitidas
+                        .anyRequest().permitAll()
                 )
                 .formLogin(form -> form.disable())
                 .logout(logout -> logout.disable());
