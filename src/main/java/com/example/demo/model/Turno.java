@@ -2,13 +2,15 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
 
 import java.time.LocalTime;
 
 @Entity
 @Table(name = "turnos")
 @Data
-public class Turno {
+@Audited
+public class Turno extends Auditable{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
