@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
 
 
 import java.time.LocalTime;
@@ -9,7 +10,8 @@ import java.time.LocalTime;
 @Entity
 @Table(name = "horarios")
 @Data
-public class Horario {
+@Audited
+public class Horario extends Auditable{
 
 
     @Id
