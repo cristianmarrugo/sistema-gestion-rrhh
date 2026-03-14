@@ -2,11 +2,13 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
 
 @Entity
 @Table(name = "usuarios")
 @Data
-public class Usuario {
+@Audited
+public class Usuario extends Auditable{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
