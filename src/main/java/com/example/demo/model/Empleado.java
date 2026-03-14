@@ -2,14 +2,16 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
 
 
 import java.time.LocalDate;
 
 @Entity
+@Audited
 @Table(name = "empleados")
 @Data
-public class Empleado {
+public class Empleado extends Auditable {
 
 
     @Id
