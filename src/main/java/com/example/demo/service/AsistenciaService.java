@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.AsistenciaStats;
 import com.example.demo.model.*;
 import com.example.demo.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class AsistenciaService {
@@ -117,50 +119,45 @@ public class AsistenciaService {
     }
 
     // 🔁 JOB AUTOMÁTICO PARA MARCAR SALIDAS OLVIDADAS (23:30 cada día)
+    // 🔁 JOB AUTOMÁTICO PARA MARCAR SALIDAS OLVIDADAS (23:30 cada día)
     @Scheduled(cron = "0 30 23 * * ?")
     public void marcarSalidasOlvidadas() {
         LocalDate hoy = LocalDate.now();
-        List<Empleado> empleados = empleadoRepository.findAll();
+        // 💡 Mejora Senior: Solo traemos empleados activos para ahorrar memoria
+        List<Empleado> empleadosActivos = empleadoRepository.findAll().stream()
+                .filter(Empleado::isActivo)
+                .toList();
 
-        System.out.println("🔄 [JOB SALIDAS] Iniciando para " + hoy);
+        System.out.println("🔄 [JOB SALIDAS] Procesando salidas pendientes para: " + hoy);
+        AtomicInteger salidasMarcadas = new AtomicInteger(0);
 
-        int salidasMarcadas = 0;
+        for (Empleado empleado : empleadosActivos) {
+            // Buscamos la asistencia de hoy que tenga entrada pero NO salida
+            asistenciaRepository.findByEmpleadoAndFecha(empleado, hoy).ifPresent(asistencia -> {
+                if (asistencia.getHoraEntrada() != null && asistencia.getHoraSalida() == null) {
 
-        for (Empleado empleado : empleados) {
-            if (!empleado.isActivo()) continue;
-
-            Optional<Asistencia> asistenciaOpt =
-                    asistenciaRepository.findByEmpleadoAndFecha(empleado, hoy);
-
-            if (asistenciaOpt.isPresent()) {
-                Asistencia asistencia = asistenciaOpt.get();
-
-                if (asistencia.getHoraEntrada() != null &&
-                        asistencia.getHoraSalida() == null) {
-
-                    // SISTEMA HÍBRIDO: Intentar obtener turno, si no existe usar horario antiguo
+                    // 💡 Lógica de Negocio: Obtener la hora teórica de salida
                     Turno turnoDelDia = turnoService.obtenerTurnoEmpleado(empleado.getId(), hoy);
-
-                    LocalTime horaSalidaEsperada;
+                    LocalTime horaSalidaTeorica = null;
 
                     if (turnoDelDia != null) {
-                        horaSalidaEsperada = turnoDelDia.getHoraSalida();
+                        horaSalidaTeorica = turnoDelDia.getHoraSalida();
                     } else if (empleado.getHorario() != null) {
-                        horaSalidaEsperada = empleado.getHorario().getHoraSalida();
-                    } else {
-                        continue; // No tiene horario definido
+                        horaSalidaTeorica = empleado.getHorario().getHoraSalida();
                     }
 
-                    asistencia.setHoraSalida(horaSalidaEsperada);
-                    asistenciaRepository.save(asistencia);
-
-                    System.out.println("  ✅ Salida automática: " + empleado.getNombre() + " a las " + horaSalidaEsperada);
-                    salidasMarcadas++;
+                    if (horaSalidaTeorica != null) {
+                        asistencia.setHoraSalida(horaSalidaTeorica);
+                        // 💡 IMPORTANTE: No llamamos a calcularHorasExtras() aquí.
+                        // Como castigo/incentivo, solo le reconocemos su horario base.
+                        asistenciaRepository.save(asistencia);
+                        salidasMarcadas.incrementAndGet();
+                        System.out.println("  ⚠️ Salida forzada: " + empleado.getNombre() + " -> " + horaSalidaTeorica);
+                    }
                 }
-            }
+            });
         }
-
-        System.out.println("✅ [JOB SALIDAS] Completado - Salidas marcadas: " + salidasMarcadas);
+        System.out.println("✅ [JOB SALIDAS] Finalizado. Total: " + salidasMarcadas);
     }
 
     public boolean llegoTardeHoy(Empleado empleado) {
@@ -380,6 +377,25 @@ public class AsistenciaService {
                 .toList();
     }
 
+    public AsistenciaStats obtenerEstadisticas(LocalDate desde, LocalDate hasta, Long empleadoId, String estadoStr) {
+        List<Asistencia> registros;
+
+        if (empleadoId != null) {
+            registros = asistenciaRepository.findByFechaBetweenAndEmpleadoId(desde, hasta, empleadoId);
+        } else {
+            registros = asistenciaRepository.findByFechaBetween(desde, hasta);
+        }
+
+        // COMPARACIÓN CORRECTA USANDO EL ENUM
+        long normal = registros.stream().filter(r -> r.getEstado() == EstadoAsistencia.NORMAL).count();
+        long tarde = registros.stream().filter(r -> r.getEstado() == EstadoAsistencia.TARDE).count();
+        long ausente = registros.stream().filter(r -> r.getEstado() == EstadoAsistencia.AUSENTE).count();
+        long permiso = registros.stream().filter(r -> r.getEstado() == EstadoAsistencia.PERMISO).count();
+        long vacaciones = registros.stream().filter(r -> r.getEstado() == EstadoAsistencia.VACACIONES).count();
+
+        return new AsistenciaStats(normal, tarde, ausente, permiso, vacaciones);
+    }
+
     /**
      * Listar asistencias por rango de fechas
      */
@@ -393,6 +409,15 @@ public class AsistenciaService {
                     return a.getEmpleado().getNombre().compareTo(b.getEmpleado().getNombre());
                 })
                 .toList();
+    }
+
+    // Nuevo método para calcular horas totales trabajadas (no solo extras)
+    public double calcularHorasTotales(LocalTime entrada, LocalTime salida) {
+        if (entrada == null || salida == null) return 0.0;
+
+        Duration duracion = Duration.between(entrada, salida);
+        // Convertimos minutos a decimal (ej: 30 min -> 0.5)
+        return duracion.toMinutes() / 60.0;
     }
 }
 
