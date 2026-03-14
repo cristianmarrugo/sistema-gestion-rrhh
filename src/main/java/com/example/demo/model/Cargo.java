@@ -2,11 +2,13 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
 
 @Entity
 @Table(name = "cargos")
 @Data
-public class Cargo {
+@Audited
+public class Cargo extends Auditable{
 
 
     @Id
