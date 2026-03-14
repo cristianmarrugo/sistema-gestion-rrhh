@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
 
 import java.time.LocalDate;
 
@@ -12,7 +13,8 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "asignaciones_turno")
 @Data
-public class AsignacionTurno {
+@Audited
+public class AsignacionTurno extends Auditable{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
