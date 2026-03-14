@@ -334,7 +334,7 @@
         </thead>
         <tbody>
         <tr th:each="reg : ${registros}">
-          <td th:text="${#temporals.format(reg.fecha, 'yyyy-MM-dd')}"></td>
+          <td th:text="${reg.fecha != null ? #temporals.format(reg.fecha, 'dd/MM/yyyy') : '-'}"></td>
           <td>
             <strong th:text="${reg.empleado.nombre + ' ' + reg.empleado.apellido}"></strong>
           </td>
@@ -342,24 +342,22 @@
           <td>
             <div class="horario-info">
               <span class="horario-real" th:text="${reg.horaEntrada != null ? reg.horaEntrada : '-'}"></span>
-              <span class="horario-esperado" th:if="${reg.horaEntradaEsperada != null}"
-                    th:text="'Esperada: ' + ${reg.horaEntradaEsperada}"></span>
             </div>
           </td>
           <td>
             <div class="horario-info">
               <span class="horario-real" th:text="${reg.horaSalida != null ? reg.horaSalida : '-'}"></span>
-              <span class="horario-esperado" th:if="${reg.horaSalidaEsperada != null}"
-                    th:text="'Esperada: ' + ${reg.horaSalidaEsperada}"></span>
             </div>
           </td>
-          <td th:text="${reg.horasExtras != null && reg.horasExtras > 0 ? #numbers.formatDecimal(reg.horasExtras, 1, 2) + ' h' : '-'}"></td>
+          <td th:text="${reg.horaEntrada != null && reg.horaSalida != null ? #numbers.formatDecimal(T(java.time.Duration).between(reg.horaEntrada, reg.horaSalida).toMinutes() / 60.0, 1, 2) + ' h' : '-'}"></td>
           <td>
-                            <span class="badge-estado" th:classappend="'badge-' + ${#strings.replace(reg.estado, ' ', '.')}"
-                                  th:text="${reg.estado}"></span>
+            <span class="badge-estado"
+                  th:classappend="'badge-' + ${reg.estado}"
+                  th:text="${reg.estado}"></span>
           </td>
         </tr>
-        <tr th:if="${#lists.isEmpty(registros)}">
+
+        <tr th:if="${#lists.isEmpty(asistencias)}">
           <td colspan="7" class="text-center text-muted py-4">
             No hay registros para mostrar
           </td>
