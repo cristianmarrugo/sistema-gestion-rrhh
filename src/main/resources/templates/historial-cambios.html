@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Auditoría de Sistema</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="mb-0"> </h3>
+      <small class="text-muted"></small>
+    </div>
+    <div>
+      <a href="/index" class="btn btn-outline-secondary">
+        Volver al inicio
+      </a>
+    </div>
+  </div>
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="fas fa-history me-2"></i> Historial de Cambios del Sistema</h5>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+        <tr>
+          <th>Fecha y Hora</th>
+          <th>Acción</th>
+          <th>Entidad</th>
+          <th>Detalle del Cambio</th>
+          <th>Realizado por</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="log : ${logs}">
+          <td th:text="${#temporals.format(log.fecha, 'dd/MM/yyyy HH:mm')}"></td>
+          <td>
+                                <span class="badge"
+                                      th:classappend="${log.accion == 'ELIMINACIÓN' ? 'bg-danger' : (log.accion == 'CREACIÓN' ? 'bg-success' : 'bg-warning text-dark')}"
+                                      th:text="${log.accion}"></span>
+          </td>
+          <td th:text="${log.entidad + ' (ID: ' + log.entidadId + ')'}"></td>
+          <td class="small" th:text="${log.detalle}"></td>
+          <td>
+            <strong th:text="${log.realizadoPor.nombre}"></strong>
+            <br><small class="text-muted" th:text="${log.realizadoPor.rol}"></small>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>
