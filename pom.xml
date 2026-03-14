@@ -37,6 +37,12 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.hibernate.orm</groupId>
+			<artifactId>hibernate-envers</artifactId>
+			<version>6.4.4.Final</version>
+		</dependency>
+
 		<!-- AGREGAR ESTAS DEPENDENCIAS AL POM.XML -->
 
 		<!-- ZXing para generación de códigos QR -->
