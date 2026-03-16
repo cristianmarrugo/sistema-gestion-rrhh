@@ -113,22 +113,18 @@ public class TurnoService {
         /**
          * Asignar un turno específico para un día concreto (manual)
          */
-        @Transactional
-        public AsignacionTurno asignarTurnoDia(Long empleadoId,
-                                               Long turnoId,
-                                               LocalDate fecha) {
-
+        public AsignacionTurno asignarTurnoDia(Long empleadoId, Long turnoId, LocalDate fecha) {
             Empleado empleado = empleadoRepository.findById(empleadoId)
                     .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
 
-            // Verificar si ya existe asignación para ese día
-            asignacionTurnoRepository.findByEmpleadoAndFecha(empleado, fecha)
-                    .ifPresent(asignacionTurnoRepository::delete);
+            // 1. Buscamos si ya existe. Si existe, la usamos; si no, creamos una nueva.
+            AsignacionTurno asignacion = asignacionTurnoRepository.findByEmpleadoAndFecha(empleado, fecha)
+                    .orElse(new AsignacionTurno());
 
-            AsignacionTurno asignacion = new AsignacionTurno();
             asignacion.setEmpleado(empleado);
             asignacion.setFecha(fecha);
 
+            // 2. Seteamos el turno o marcamos como libre
             if (turnoId != null && turnoId > 0) {
                 Turno turno = turnoRepository.findById(turnoId)
                         .orElseThrow(() -> new RuntimeException("Turno no encontrado"));
@@ -139,6 +135,7 @@ public class TurnoService {
                 asignacion.setTipo(TipoAsignacion.LIBRE);
             }
 
+            // 3. Guardamos (si ya existía, hace un UPDATE; si no, un INSERT)
             return asignacionTurnoRepository.save(asignacion);
         }
 
@@ -157,18 +154,10 @@ public class TurnoService {
         /**
          * Obtener cuadrante mensual de un empleado
          */
-        public List<AsignacionTurno> obtenerCuadranteMensual(Long empleadoId,
-                                                             int mes,
-                                                             int anio) {
-            Empleado empleado = empleadoRepository.findById(empleadoId)
-                    .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
-
+        public List<AsignacionTurno> obtenerCuadranteMensual(Long empleadoId, int mes, int anio) {
             YearMonth yearMonth = YearMonth.of(anio, mes);
-            LocalDate inicio = yearMonth.atDay(1);
-            LocalDate fin = yearMonth.atEndOfMonth();
-
-            return asignacionTurnoRepository.findByEmpleadoAndFechaBetween(
-                    empleado, inicio, fin
+            return asignacionTurnoRepository.findByEmpleado_IdAndFechaBetween(
+                    empleadoId, yearMonth.atDay(1), yearMonth.atEndOfMonth()
             );
         }
 
