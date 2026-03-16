@@ -99,13 +99,16 @@ public class CuadranteController {
         if (empleadoLogueado == null) {
             return Map.of("success", false, "message", "No autenticado");
         }
-
         try {
             LocalDate fechaLocal = LocalDate.parse(fecha);
             turnoService.asignarTurnoDia(empleadoId, turnoId, fechaLocal);
 
-            return Map.of("success", true, "message", "Turno asignado correctamente");
+            // No devuelvas la entidad, solo un mapa simple de confirmación
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            return response;
         } catch (Exception e) {
+            e.printStackTrace(); // Esto imprimirá el error real en la consola de IntelliJ
             return Map.of("success", false, "message", e.getMessage());
         }
     }
