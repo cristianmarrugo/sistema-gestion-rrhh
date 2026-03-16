@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import org.hibernate.envers.Audited;
 
 import java.time.LocalDate;
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "asignaciones_turno")
 @Data
+@ToString(exclude = "empleado")
 @Audited
 public class AsignacionTurno extends Auditable{
 
@@ -20,7 +22,7 @@ public class AsignacionTurno extends Auditable{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "empleado_id", nullable = false)
     private Empleado empleado;
 
