@@ -78,6 +78,13 @@
             <a href="/dashboard-powerbi"><i class="fas fa-chart-pie"></i> Análisis Power BI</a>
         </div>
 
+        <li class="nav-item" th:if="${empleado.rol.toString() == 'EMPLEADO'}">
+            <a class="nav-link" th:href="@{/empleado/perfil}">
+                <i class="bi bi-file-earmark-arrow-up"></i>
+                <span>Mis Documentos y PQRS</span>
+            </a>
+        </li>
+
         <div class="menu-label">Mi Espacio</div>
         <a href="/asistencia"><i class="fas fa-user-clock"></i> Mi Asistencia</a>
         <a href="/permisos" th:if="${empleado.rol.toString() == 'EMPLEADO'}"><i class="fas fa-paper-plane"></i> Solicitar Permiso</a>
@@ -96,6 +103,13 @@
                 <i class="fas fa-cog"></i> Configuraciones
             </a>
         </div>
+
+        <li class="nav-item" th:if="${session.empleado != null && (session.empleado.rol.toString() == 'ADMIN' || session.empleado.rol.toString() == 'RRHH')}">
+            <a class="nav-link" th:href="@{/empleado/admin/gestion-pqrs}">
+                <i class="bi bi-mailbox"></i>
+                <span>Gestión Global de PQRS</span>
+            </a>
+        </li>
 
         <div class="mt-4 px-3">
             <a href="/logout" class="btn btn-outline-danger btn-sm w-100 border-0">
