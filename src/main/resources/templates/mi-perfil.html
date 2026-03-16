@@ -1,99 +1,131 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Mi Perfil - Sistema RRHH</title>
+    <meta charset="UTF-8">
+    <title>Mi Gestión de Empleado</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <style>
+        .card { border-radius: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .badge-PENDIENTE { background-color: #ffc107; color: #000; }
+        .badge-RESUELTO { background-color: #198754; color: #fff; }
+        .btn-upload { background-color: #6366f1; color: white; }
+    </style>
 </head>
 <body class="bg-light">
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-0"> </h3>
+        <small class="text-muted"></small>
+    </div>
+    <div>
+        <a href="/index" class="btn btn-outline-secondary">
+            Volver al inicio
+        </a>
+    </div>
+</div>
+<div class="container py-5">
+    <h2 class="mb-4">Mi Perfil y Gestiones</h2>
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-
-            <!-- Alerta de éxito -->
-            <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show">
-                ✅ Perfil actualizado correctamente
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">👤 Mi Perfil</h4>
-                </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-white font-weight-bold">📁 Mis Documentos (PDF)</div>
                 <div class="card-body">
+                    <form th:action="@{/empleado/documentos/subir}" method="post" enctype="multipart/form-data" class="mb-4">
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de documento</label>
+                            <select name="tipo" class="form-select" required>
+                                <option value="CEDULA">Cédula de Ciudadanía</option>
+                                <option value="CONTRATO">Contrato Laboral</option>
+                                <option value="CERTIFICADO_MEDICO">Certificado Médico</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <input type="file" name="archivo" class="form-control" accept=".pdf" required>
+                        </div>
+                        <button type="submit" class="btn btn-upload w-100">Subir PDF</button>
+                    </form>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Nombre completo:</strong>
-                            <p th:text="${empleado.nombre + ' ' + empleado.apellido}"></p>
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Documento:</strong>
-                            <p th:text="${empleado.documento}"></p>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Email:</strong>
-                            <p th:text="${empleado.email}"></p>
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Rol:</strong>
-                            <p>
-                                <span class="badge bg-secondary" th:text="${empleado.rol}"></span>
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Cargo:</strong>
-                            <p th:text="${empleado.cargo != null ? empleado.cargo.nombre : 'Sin cargo'}"></p>
-                        </div>
-                        <div class="col-md-6"
-                             th:if="${empleado.rol.toString() == 'ADMIN' or empleado.rol.toString() == 'RRHH'}">
-                            <strong>Salario base:</strong>
-                            <p th:text="${empleado.cargo != null ? '$' + empleado.cargo.salarioBase : '-'}"></p>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Fecha de ingreso:</strong>
-                            <p th:text="${#temporals.format(empleado.fechaIngreso, 'dd/MM/yyyy')}"></p>
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Estado:</strong>
-                            <p>
-                                <span th:if="${empleado.activo}" class="badge bg-success">Activo</span>
-                                <span th:unless="${empleado.activo}" class="badge bg-danger">Inactivo</span>
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <strong>Horario:</strong>
-                            <p th:if="${empleado.horario != null}"
-                               th:text="${empleado.horario.nombre + ' (' + empleado.horario.horaEntrada + ' - ' + empleado.horario.horaSalida + ')'}">
-                            </p>
-                            <p th:unless="${empleado.horario != null}" class="text-muted">
-                                Sin horario asignado
-                            </p>
-                        </div>
-                    </div>
-
+                    <table class="table table-sm">
+                        <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Fecha</th>
+                            <th>Acción</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="doc : ${misDocumentos}">
+                            <td th:text="${doc.tipo}"></td>
+                            <td th:text="${doc.fechaSubida}"></td>
+                            <td>
+                                <a th:href="@{'/uploads/documentos/' + ${doc.nombre}}" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>
+                                <form th:action="@{/empleado/documentos/eliminar/{id}(id=${doc.id})}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="card-footer bg-white">
-                    <div class="d-flex justify-content-between">
-                        <a href="/" class="btn btn-secondary">← Volver al inicio</a>
-                        <a href="/mi-perfil/editar" class="btn btn-primary">✏️ Editar perfil</a>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-white font-weight-bold">📨 Radicar PQRS</div>
+                <div class="card-body">
+                    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalPQRS">Nuevo PQRS</button>
+
+                    <div class="list-group">
+                        <div th:each="p : ${misPQRS}" class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1" th:text="${p.asunto}"></h6>
+                                <span th:class="'badge badge-' + ${p.estado}" th:text="${p.estado}"></span>
+                            </div>
+                            <small th:text="${'Fecha: ' + p.fechaCreacion}"></small>
+                            <p class="mb-1 text-muted" th:text="${p.descripcion}"></p>
+                            <div th:if="${p.respuestaRRHH != null}" class="mt-2 p-2 bg-light border-start border-primary border-4">
+                                <strong>Respuesta RRHH:</strong> <span th:text="${p.respuestaRRHH}"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
         </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalPQRS" tabindex="-1">
+    <div class="modal-dialog">
+        <form th:action="@{/empleado/pqrs/crear}" method="post" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo PQRS</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Tipo</label>
+                    <select name="tipo" class="form-select">
+                        <option value="PETICION">Petición</option>
+                        <option value="QUEJA">Queja</option>
+                        <option value="RECLAMO">Reclamo</option>
+                        <option value="SUGERENCIA">Sugerencia</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Asunto</label>
+                    <input type="text" name="asunto" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descripción</label>
+                    <textarea name="descripcion" class="form-control" rows="3" required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Enviar</button>
+            </div>
+        </form>
     </div>
 </div>
 
