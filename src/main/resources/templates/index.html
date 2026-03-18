@@ -104,7 +104,7 @@
             </a>
         </div>
 
-        <li class="nav-item" th:if="${session.empleado != null && (session.empleado.rol.toString() == 'ADMIN' || session.empleado.rol.toString() == 'RRHH')}">
+        <li class="nav-item" th:if="${session.empleado != null && (session.empleado.rol.toString() == 'RRHH')}">
             <a class="nav-link" th:href="@{/empleado/admin/gestion-pqrs}">
                 <i class="bi bi-mailbox"></i>
                 <span>Gestión Global de PQRS</span>
