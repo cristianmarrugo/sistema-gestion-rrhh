@@ -59,11 +59,11 @@
     </div>
 
     <div class="sidebar-menu">
-        <a href="/" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a th:href="@{/mi-perfil}" class="active" th:text="${empleado.nombre}"><i class="fas fa-chart-line"></i></a>
 
         <div th:if="${empleado.rol.toString() == 'RRHH' || empleado.rol.toString() == 'ADMIN'}">
             <div class="menu-label">Administración</div>
-            <a href="/empleados"><i class="fas fa-users"></i> Empleados</a>
+            <a href="/empleados" th:if="${empleado.rol.toString() == 'ADMIN'}"><i class="fas fa-users"></i> Empleados</a>
             <a href="/cargos" th:if="${empleado.rol.toString() == 'ADMIN'}"><i class="fas fa-briefcase"></i> Cargos</a>
             <a href="/permisos/pendientes"><i class="fas fa-check-circle"></i> Permisos Pendientes</a>
             <a href="/vacaciones/pendientes"><i class="fas fa-calendar-check"></i> Vacaciones Pendientes</a>
@@ -95,12 +95,13 @@
         <div th:if="${empleado.rol.toString() == 'ADMIN'}">
             <div class="menu-label">Sistema y Seguridad</div>
 
-            <a href="/admin/historial">
-                <i class="fas fa-fingerprint"></i> Auditoría de Cambios
-            </a>
-
             <a href="/configuracion">
                 <i class="fas fa-cog"></i> Configuraciones
+            </a>
+
+            <div class="menu-label">Gestion de personal</div>
+            <a href="/admin/historial">
+                <i class="fas fa-fingerprint"></i> Auditoría de Cambios
             </a>
         </div>
 
