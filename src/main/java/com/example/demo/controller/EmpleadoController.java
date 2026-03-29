@@ -68,7 +68,6 @@ public class EmpleadoController {
     }
 
     // Actualizar empleado existente
-    // Actualizar empleado existente
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizar(
             @PathVariable Long id,
