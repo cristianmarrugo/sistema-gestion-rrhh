@@ -4,7 +4,12 @@ import com.example.demo.model.Empleado;
 import com.example.demo.model.EstadoSolicitud;
 import com.example.demo.model.Permiso;
 import com.example.demo.repository.PermisoRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.envers.AuditReader;
+import org.hibernate.envers.AuditReaderFactory;
+import org.hibernate.envers.query.AuditEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +27,18 @@ public class PermisoService {
         return permisoRepository.existsPermisoActivo(
                 empleado, LocalDate.now()
         );
+    }
+
+    @Transactional
+    public void autorizarPermiso(Long permisoId, String nombreAdmin) {
+        Permiso permiso =  permisoRepository.findById(permisoId)
+                .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
+
+        // Al cambiar estos valores, Envers creará un nuevo registro en la tabla _AUD
+        permiso.setEstado(EstadoSolicitud.APROBADO);
+        permiso.setAprobadoPor(nombreAdmin);
+
+        permisoRepository.save(permiso);
     }
 
     public List<Permiso> listarTodos() {
@@ -75,6 +92,19 @@ public class PermisoService {
                     return true;
                 })
                 .orElse(false);
+    }
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    public List<Permiso> obtenerHistorial(Long solicitudId) {
+        AuditReader auditReader = AuditReaderFactory.get(entityManager);
+
+        // Esto te devuelve todas las versiones que ha tenido esa solicitud
+        return auditReader.createQuery()
+                .forRevisionsOfEntity(Permiso.class, true, true)
+                .add(AuditEntity.id().eq(solicitudId))
+                .getResultList();
     }
 }
 
