@@ -9,6 +9,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.time.LocalDate;
 
 @Controller
 @RequiredArgsConstructor
@@ -28,7 +31,7 @@ public class PerfilController {
         empleado = empleadoService.obtenerPorId(empleado.getId()).orElse(empleado);
         model.addAttribute("empleado", empleado);
 
-        return "mi-perfil";
+        return "perfil-empleado";
     }
 
     @GetMapping("/mi-perfil/editar")
@@ -48,38 +51,45 @@ public class PerfilController {
     @PostMapping("/mi-perfil/editar")
     public String guardarMiPerfil(@RequestParam Long id,
                                   @RequestParam String email,
-                                  @RequestParam String telefono,
+                                  @RequestParam(required = false) String telefono,
+                                  @RequestParam(required = false) LocalDate fechaNacimiento,
                                   @RequestParam(required = false) String direccion,
                                   HttpSession session,
-                                  Model model) {
+                                  Model model,
+                                  RedirectAttributes redirectAttributes) {
 
-        Empleado empleado = (Empleado) session.getAttribute("empleado");
+        Empleado empleadoSesion = (Empleado) session.getAttribute("empleado");
 
-        if (empleado == null || !empleado.getId().equals(id)) {
+        // Seguridad: Verificar que el ID que se intenta editar es el del usuario logueado
+        if (empleadoSesion == null || !empleadoSesion.getId().equals(id)) {
             return "redirect:/login";
         }
 
-        // Actualizar solo campos que el empleado puede modificar
-        Empleado empleadoActualizado = empleadoService.obtenerPorId(id).orElse(null);
+        try {
+            // Buscamos el empleado real de la BD
+            Empleado empleadoBD = empleadoService.obtenerPorId(id)
+                    .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
 
-        if (empleadoActualizado == null) {
-            return "redirect:/login";
+            // Actualizamos SOLO los campos permitidos para el autoservicio
+            empleadoBD.setEmail(email);
+            empleadoBD.setTelefono(telefono);
+            empleadoBD.setDireccion(direccion);
+            empleadoBD.setFechaNacimiento(fechaNacimiento);
+
+            // El método actualizar ya tiene las validaciones de Duplicados (Email/PIN)
+            empleadoService.actualizar(id, empleadoBD);
+
+            // Actualizar la sesión para que el nombre/email cambie en el header de inmediato
+            session.setAttribute("empleado", empleadoBD);
+
+            redirectAttributes.addFlashAttribute("mensaje", "¡Perfil actualizado con éxito!");
+            return "redirect:/mi-perfil?success=true";
+
+        } catch (RuntimeException e) {
+            // Si el email está repetido, regresamos al formulario con el error
+            model.addAttribute("error", e.getMessage());
+            model.addAttribute("empleado", empleadoSesion);
+            return "editar-perfil";
         }
-
-        empleadoActualizado.setEmail(email);
-        // Si tienes campos de teléfono y dirección en tu modelo, descoméntalos:
-        // empleadoActualizado.setTelefono(telefono);
-        // empleadoActualizado.setDireccion(direccion);
-
-        empleadoService.actualizar(id, empleadoActualizado);
-
-        // Actualizar sesión con datos nuevos
-        empleadoActualizado = empleadoService.obtenerPorId(id).orElse(empleadoActualizado);
-        session.setAttribute("empleado", empleadoActualizado);
-
-        model.addAttribute("mensaje", "Perfil actualizado correctamente");
-        model.addAttribute("empleado", empleadoActualizado);
-
-        return "redirect:/mi-perfil?success=true";
     }
 }
