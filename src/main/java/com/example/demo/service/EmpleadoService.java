@@ -49,9 +49,20 @@ public class EmpleadoService {
 
     @Transactional
     public Empleado crear(Empleado empleado) {
+
+        if (empleadoRepository.findByDocumento(empleado.getDocumento()).isPresent()) {
+            throw new RuntimeException("El documento ya está registrado.");
+        }
+        if (empleadoRepository.findByEmail(empleado.getEmail()).isPresent()) {
+            throw new RuntimeException("El email ya está registrado.");
+        }
         // Generar PIN automático si no viene
         if (empleado.getPin() == null || empleado.getPin().isEmpty()) {
             empleado.setPin(generarPinUnico());
+        }else {
+            if (empleadoRepository.findByPin(empleado.getPin()).isPresent()) {
+                throw new RuntimeException("El PIN ya está en uso por otro empleado.");
+            }
         }
 
         // Por defecto activo
@@ -64,6 +75,30 @@ public class EmpleadoService {
     public Optional<Empleado> actualizar(Long id, Empleado empleadoActualizado) {
         return empleadoRepository.findById(id)
                 .map(empleado -> {
+
+                    // 1. Validar Email Duplicado (Si cambió el email)
+                    if (!empleado.getEmail().equals(empleadoActualizado.getEmail())) {
+                        if (empleadoRepository.findByEmail(empleadoActualizado.getEmail()).isPresent()) {
+                            throw new RuntimeException("El email ya está registrado por otro empleado.");
+                        }
+                    }
+
+                    // 2. Validar Documento Duplicado (Si cambió el documento)
+                    if (!empleado.getDocumento().equals(empleadoActualizado.getDocumento())) {
+                        if (empleadoRepository.findByDocumento(empleadoActualizado.getDocumento()).isPresent()) {
+                            throw new RuntimeException("El documento ya está registrado por otro empleado.");
+                        }
+                    }
+
+                    // 3. Validar PIN Duplicado (Si se envió un PIN nuevo)
+                    if (empleadoActualizado.getPin() != null && !empleadoActualizado.getPin().isEmpty()) {
+                        if (!empleado.getPin().equals(empleadoActualizado.getPin())) {
+                            if (empleadoRepository.findByPin(empleadoActualizado.getPin()).isPresent()) {
+                                throw new RuntimeException("El PIN ya está en uso por otro empleado.");
+                            }
+                            empleado.setPin(empleadoActualizado.getPin());
+                        }
+                    }
                     empleado.setNombre(empleadoActualizado.getNombre());
                     empleado.setApellido(empleadoActualizado.getApellido());
                     empleado.setDocumento(empleadoActualizado.getDocumento());
