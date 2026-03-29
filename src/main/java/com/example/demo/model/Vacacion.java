@@ -2,12 +2,15 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
+
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "vacaciones")
 @Data
-public class Vacacion {
+@Audited
+public class Vacacion extends Auditable{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,5 +26,7 @@ public class Vacacion {
 
     @Enumerated(EnumType.STRING)
     private EstadoSolicitud estado;
+
+    private String aprobadoPor;
 }
 
