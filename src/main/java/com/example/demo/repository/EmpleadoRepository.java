@@ -9,4 +9,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     Optional<Empleado> findByPin(String pin);
 
     Optional<Empleado> findByDocumento(String documento);
+
+    Optional<Object> findByEmail(String email);
 }
