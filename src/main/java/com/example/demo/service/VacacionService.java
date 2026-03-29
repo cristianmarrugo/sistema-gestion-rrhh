@@ -2,9 +2,15 @@ package com.example.demo.service;
 
 import com.example.demo.model.Empleado;
 import com.example.demo.model.EstadoSolicitud;
+import com.example.demo.model.Permiso;
 import com.example.demo.model.Vacacion;
 import com.example.demo.repository.VacacionRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.envers.AuditReader;
+import org.hibernate.envers.AuditReaderFactory;
+import org.hibernate.envers.query.AuditEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -197,6 +203,29 @@ public class VacacionService {
                 .filter(v -> v.getFechaInicio().getYear() == LocalDate.now().getYear())
                 .mapToInt(Vacacion::getDiasSolicitados)
                 .sum();
+    }
+
+    @Transactional
+    public void autorizar(Long id, String nombreAdmin) {
+        Vacacion vacacion = vacacionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Vacación no encontrada"));
+
+        vacacion.setEstado(EstadoSolicitud.APROBADO);
+        vacacion.setAprobadoPor(nombreAdmin);
+        vacacionRepository.save(vacacion);
+    }
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    public List<Vacacion> obtenerHistorial(Long id) {
+        AuditReader auditReader = AuditReaderFactory.get(entityManager);
+
+        // Consultamos las revisiones específicamente para la clase Vacacion
+        return auditReader.createQuery()
+                .forRevisionsOfEntity(Vacacion.class, true, true)
+                .add(AuditEntity.id().eq(id))
+                .getResultList();
     }
 }
 
