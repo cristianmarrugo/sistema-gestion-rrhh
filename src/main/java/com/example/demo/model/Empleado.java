@@ -20,12 +20,28 @@ public class Empleado extends Auditable {
 
 
     private String nombre;
+
     private String apellido;
+
+    @Column(unique = true, nullable = false)
     private String documento;
+
+    @Column(unique = true, nullable = false)
     private String email;
+
+    @Column(unique = true, nullable = false)
     private String pin;
+
     @Enumerated (EnumType.STRING)
     private Rol rol;
+
+    private String telefono;
+
+    private String direccion;
+
+    private LocalDate fechaNacimiento;
+
+    private Double salario;
 
 
     private LocalDate fechaIngreso;
