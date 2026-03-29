@@ -2,13 +2,15 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
 
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "permisos")
 @Data
-public class Permiso {
+@Audited
+public class Permiso extends Auditable{
 
 
     @Id
@@ -28,4 +30,6 @@ public class Permiso {
 
     @Enumerated(EnumType.STRING)
     private EstadoSolicitud estado;
+
+    private String aprobadoPor;
 }
