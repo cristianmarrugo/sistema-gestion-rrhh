@@ -56,6 +56,10 @@
               <p class="info-label mb-1">Fecha de Nacimiento</p>
               <p class="fw-bold text-dark" th:text="${empleado.fechaNacimiento != null ? #temporals.format(empleado.fechaNacimiento, 'dd/MM/yyyy') : 'No registrada'}">15/05/1990</p>
             </div>
+            <div class="col-md-6">
+              <p class="info-label mb-1">Direccion de residencia</p>
+              <p class="fw-bold text-dark" th:text="${empleado.direccion ?: 'No registrado'}">...</p>
+            </div>
           </div>
 
           <hr class="my-4 text-muted opacity-25">
