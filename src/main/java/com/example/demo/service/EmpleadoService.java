@@ -106,6 +106,9 @@ public class EmpleadoService {
                     empleado.setRol(empleadoActualizado.getRol());
                     empleado.setFechaIngreso(empleadoActualizado.getFechaIngreso());
                     empleado.setCargo(empleadoActualizado.getCargo());
+                    empleado.setFechaNacimiento(empleadoActualizado.getFechaNacimiento());
+                    empleado.setDireccion(empleadoActualizado.getDireccion());
+                    empleado.setTelefono(empleadoActualizado.getTelefono());
 
                     // Horario puede ser null (opcional)
                     empleado.setHorario(empleadoActualizado.getHorario());
