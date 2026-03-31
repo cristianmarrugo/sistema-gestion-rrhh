@@ -82,6 +82,12 @@ public class PerfilController {
             // Actualizar la sesión para que el nombre/email cambie en el header de inmediato
             session.setAttribute("empleado", empleadoBD);
 
+            empleadoService.actualizar(id, empleadoBD);
+
+            // Volvemos a buscarlo de la BD para estar 100% seguros de que traemos lo que se guardó
+            Empleado datosFrescos = empleadoService.obtenerPorId(id).get();
+            session.setAttribute("empleado", datosFrescos);
+
             redirectAttributes.addFlashAttribute("mensaje", "¡Perfil actualizado con éxito!");
             return "redirect:/mi-perfil?success=true";
 
