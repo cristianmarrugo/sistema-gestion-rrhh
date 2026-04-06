@@ -118,12 +118,24 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="nombre" class="form-label">Nombre *</label>
+                            <label for="nombre" class="form-label">Nombres *</label>
                             <input type="text" class="form-control" id="nombre" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="apellido" class="form-label">Apellido *</label>
+                            <label for="apellido" class="form-label">Apellidos *</label>
                             <input type="text" class="form-control" id="apellido" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre" class="form-label">Telefono *</label>
+                            <input type="text" class="form-control" id="telefono" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre" class="form-label">Direccion de residencia *</label>
+                            <input type="text" class="form-control" id="direccion" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fechaIngreso" class="form-label">Fecha de nacimiento *</label>
+                            <input type="date" class="form-control" id="fechaNacimiento" required>
                         </div>
                     </div>
 
@@ -411,6 +423,9 @@
         document.getElementById('empleadoId').value = empleado.id;
         document.getElementById('nombre').value = empleado.nombre;
         document.getElementById('apellido').value = empleado.apellido;
+        document.getElementById('telefono').value = empleado.telefono;
+        document.getElementById('direccion').value = empleado.direccion;
+        document.getElementById('fechaNacimiento').value = empleado.fechaNacimiento;
         document.getElementById('documento').value = empleado.documento;
         document.getElementById('email').value = empleado.email;
         document.getElementById('pin').value = empleado.pin || '';
