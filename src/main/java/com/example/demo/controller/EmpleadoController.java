@@ -113,6 +113,7 @@ public class EmpleadoController {
             empleadoActualizado.setPin(empleadoExistente.getPin());
             empleadoActualizado.setActivo(empleadoExistente.isActivo());
             empleadoActualizado.setDocumento(empleadoExistente.getDocumento());
+            empleadoActualizado.setTelefono(empleadoExistente.getTelefono());
         }
 
         // ====== FIN DE VALIDACIONES DE SEGURIDAD ======
