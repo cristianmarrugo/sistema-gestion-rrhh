@@ -2,12 +2,21 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Empleado;
 import com.example.demo.service.AsistenciaService;
+import com.example.demo.service.TurnoService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.ai.openai.OpenAiChatModel; // Asegúrate de importar esta
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -15,197 +24,90 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ChatbotController {
 
+    private final OpenAiChatModel chatModel; // Cambiamos ChatClient por el Model directo
     private final AsistenciaService asistenciaService;
+    private final TurnoService turnoService;
 
     @PostMapping("/mensaje")
-    public ResponseEntity<String> procesarMensaje(@RequestBody Map<String, String> request,
-                                                  HttpSession session) {
-
+    public ResponseEntity<String> procesarMensaje(@RequestBody Map<String, String> request, HttpSession session) {
         Empleado empleado = (Empleado) session.getAttribute("empleado");
-        if (empleado == null) {
-            return ResponseEntity.status(401).body("Debes iniciar sesión");
+        if (empleado == null) return ResponseEntity.status(401).body("Debes iniciar sesión");
+
+        String mensajeUsuario = request.get("mensaje");
+        String datosContexto = obtenerContextoEmpleado(empleado);
+
+        try {
+            String systemInstruction = String.format("""
+        Eres el 'Asistente Virtual de RRHH' de nuestra empresa. 
+        TU IDENTIDAD: Tu nombre es richard, eres una IA de soporte.
+        DATOS DEL USUARIO ACTUAL: %s. 
+        
+        REGLAS CRÍTICAS:
+        1. Tu única función es ayudar con temas de RRHH (tardanzas, horas extra, horarios, nómina).
+        2. Si el usuario te pregunta sobre temas ajenos (fútbol, política, cocina, mundial, etc.), responde cortésmente: 
+           "Lo siento, solo puedo ayudarte con consultas relacionadas con Recursos Humanos y tu actividad en la empresa."
+        3. Dirígete al usuario por su nombre cuando lo saludes.
+        4. Usa la información de las tardanzas y horas extra que te proporciono para dar respuestas exactas.
+        5. Sé breve, profesional y usa emojis.
+        
+        Tu fuente de verdad es el 'Cuadrante de Turnos'.\s
+        CONTEXTO DEL EMPLEADO:
+                       \s
+        INSTRUCCIONES:
+        1. Si el empleado pregunta por su horario, revisa la información del turno asignado para HOY que te proporcioné.
+        2. Si no hay un turno asignado en el contexto, indícale que no aparece en el cuadrante de hoy y debe contactar a su supervisor.
+        """, datosContexto);
+
+            SystemMessage systemMessage = new SystemMessage(systemInstruction);
+            UserMessage userMessage = new UserMessage(mensajeUsuario);
+
+            Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
+            return ResponseEntity.ok(chatModel.call(prompt).getResult().getOutput().getContent());
+        } catch (Exception e) {
+            // LOG del error para ti
+            System.err.println("Error en OpenAI: " + e.getMessage());
+
+            // Respuesta de respaldo para el usuario
+            return ResponseEntity.ok("🤖 Lo siento, estoy teniendo problemas de conexión con mis circuitos cerebrales (OpenAI Quota). " +
+                    "Por ahora, por favor consulta directamente en la oficina de RRHH.");
         }
-
-        String mensaje = request.get("mensaje").toLowerCase().trim();
-        String respuesta = generarRespuesta(mensaje, empleado);
-
-        return ResponseEntity.ok(respuesta);
     }
 
-    private String generarRespuesta(String mensaje, Empleado empleado) {
+    private String obtenerContextoEmpleado(Empleado emp) {
+        LocalDate hoy = LocalDate.now();
+        LocalDate inicioMes = hoy.withDayOfMonth(1);
 
-        // 1. CONSULTAS SOBRE TARDANZAS
-        if (mensaje.contains("tardanza") || mensaje.contains("tarde") ||
-                mensaje.contains("cuantas veces") || mensaje.contains("llegué tarde")) {
+        // 1. Obtener el turno de HOY desde el cuadrante/asignación
+        // Supongamos que tienes un método que busca la asignación por empleado y fecha
+        var turnoActual = turnoService.buscarTurnoPorEmpleadoYFecha(emp.getId(), hoy);
 
-            LocalDate inicioMes = LocalDate.now().withDayOfMonth(1);
-            LocalDate hoy = LocalDate.now();
+        String infoTurno = (turnoActual != null)
+                ? String.format("Hoy tienes el turno '%s' de %s a %s.",
+                turnoActual.getTurno().getNombre(),
+                turnoActual.getTurno().getHoraEntrada(),
+                turnoActual.getTurno().getHoraSalida())
+                : "No tienes un turno asignado para hoy en el cuadrante.";
 
-            long tardanzas = asistenciaService.obtenerPorEmpleadoYRangoFechas(
-                            empleado.getId(), inicioMes, hoy
-                    ).stream()
-                    .filter(a -> "TARDE".equals(a.getEstado()))
-                    .count();
+        // 2. Obtener métricas de asistencia (Tardanzas y Horas Extra)
+        long tardanzas = asistenciaService.obtenerPorEmpleadoYRangoFechas(emp.getId(), inicioMes, hoy)
+                .stream().filter(a -> "TARDE".equals(a.getEstado())).count();
 
-            if (tardanzas == 0) {
-                return "🎉 ¡Excelente! No tienes tardanzas este mes. Sigue así.";
-            } else if (tardanzas <= 2) {
-                return "⚠️ Tienes " + tardanzas + " tardanza(s) este mes. " +
-                        "Recuerda llegar a tiempo para mantener tu récord impecable.";
-            } else {
-                return "⚠️ Tienes " + tardanzas + " tardanzas este mes. " +
-                        "Te recomendamos revisar tu horario y planificar mejor tus llegadas. " +
-                        "Si tienes dificultades, habla con RRHH.";
-            }
-        }
+        double horasExtra = asistenciaService.horasExtraMesActual(emp);
 
-        // 2. CONSULTAS SOBRE HORAS EXTRA
-        if (mensaje.contains("horas extra") || mensaje.contains("horas adicionales") ||
-                mensaje.contains("tiempo extra")) {
 
-            LocalDate inicioMes = LocalDate.now().withDayOfMonth(1);
-            LocalDate hoy = LocalDate.now();
 
-            double horasExtra = asistenciaService.horasExtraMesActual(empleado);
-
-            if (horasExtra == 0) {
-                return "⏱️ No tienes horas extra registradas este mes. " +
-                        "Recuerda marcar tu salida después de tu horario si trabajas tiempo adicional.";
-            } else {
-                return String.format("⏱️ Tienes %.2f horas extra este mes. " +
-                        "Estas serán incluidas en tu nómina. ¡Buen trabajo!", horasExtra);
-            }
-        }
-
-        // 3. CONSULTAS SOBRE PERMISOS
-        if (mensaje.contains("permiso") || mensaje.contains("solicitar") ||
-                mensaje.contains("solicitud")) {
-
-            return "📄 Para solicitar un permiso:\n\n" +
-                    "1. Ve a la sección 'Permisos' en el menú\n" +
-                    "2. Click en 'Solicitar Permiso'\n" +
-                    "3. Completa el formulario con fecha y motivo\n" +
-                    "4. RRHH revisará tu solicitud\n\n" +
-                    "💡 Tip: Solicita con anticipación para mejor aprobación.";
-        }
-
-        // 4. CONSULTAS SOBRE VACACIONES
-        if (mensaje.contains("vacacion") || mensaje.contains("descanso")) {
-            return "🏖️ Para solicitar vacaciones:\n\n" +
-                    "1. Ve a la sección 'Vacaciones' en el menú\n" +
-                    "2. Verifica tus días disponibles\n" +
-                    "3. Solicita con al menos 15 días de anticipación\n" +
-                    "4. RRHH aprobará según disponibilidad\n\n" +
-                    "¿Necesitas saber cuántos días tienes? Contáctame.";
-        }
-
-        // 5. CONSULTAS SOBRE HORARIO
-        if (mensaje.contains("horario") || mensaje.contains("entrada") ||
-                mensaje.contains("salida") || mensaje.contains("hora")) {
-
-            if (empleado.getHorario() == null) {
-                return "⚠️ No tienes un horario asignado. " +
-                        "Contacta con RRHH para que te asignen uno.";
-            }
-
-            return String.format("🕐 Tu horario es:\n\n" +
-                            "Entrada: %s\n" +
-                            "Salida: %s\n" +
-                            "Tolerancia: %d minutos\n\n" +
-                            "Recuerda marcar tu entrada y salida todos los días.",
-                    empleado.getHorario().getHoraEntrada(),
-                    empleado.getHorario().getHoraSalida(),
-                    empleado.getHorario().getToleranciaMinutos());
-        }
-
-        // 6. CONSULTAS SOBRE NÓMINA
-        if (mensaje.contains("nomina") || mensaje.contains("salario") ||
-                mensaje.contains("pago") || mensaje.contains("sueldo")) {
-
-            return "💰 Información de nómina:\n\n" +
-                    "• Puedes ver tu nómina en la sección 'Mi Nómina'\n" +
-                    "• Los pagos se realizan el día 30 de cada mes\n" +
-                    "• Incluye: salario base + horas extra\n\n" +
-                    "Si tienes dudas sobre tu pago, contacta a RRHH.";
-        }
-
-        // 7. CONSULTAS SOBRE ASISTENCIA
-        if (mensaje.contains("asistencia") || mensaje.contains("marcar") ||
-                mensaje.contains("registro") || mensaje.contains("olvidé")) {
-
-            return "⏱️ Sobre asistencia:\n\n" +
-                    "• Marca tu entrada al llegar\n" +
-                    "• Marca tu salida al irte\n" +
-                    "• Si olvidaste marcar, contacta a RRHH\n" +
-                    "• Puedes ver tu historial en 'Mi Asistencia'\n\n" +
-                    "💡 Recuerda: la salida automática solo registra tu horario, " +
-                    "no tus horas extra.";
-        }
-
-        // 8. CONSULTAS SOBRE AUSENCIAS
-        if (mensaje.contains("ausencia") || mensaje.contains("falta") ||
-                mensaje.contains("no pude") || mensaje.contains("no asistí")) {
-
-            LocalDate inicioMes = LocalDate.now().withDayOfMonth(1);
-            LocalDate hoy = LocalDate.now();
-
-            long ausencias = asistenciaService.obtenerPorEmpleadoYRangoFechas(
-                            empleado.getId(), inicioMes, hoy
-                    ).stream()
-                    .filter(a -> "AUSENTE".equals(a.getEstado()))
-                    .count();
-
-            return String.format("⚠️ Tienes %d ausencia(s) este mes.\n\n" +
-                    "Si tuviste un inconveniente:\n" +
-                    "1. Solicita un permiso retroactivo\n" +
-                    "2. Contacta con RRHH para justificar\n\n" +
-                    "Las ausencias no justificadas afectan tu nómina.", ausencias);
-        }
-
-        // 9. SALUDO
-        if (mensaje.contains("hola") || mensaje.contains("buenos") ||
-                mensaje.contains("buenas")) {
-            return "¡Hola " + empleado.getNombre() + "! 👋\n\n" +
-                    "Soy tu asistente virtual de RRHH. Puedo ayudarte con:\n\n" +
-                    "• Consultar tus tardanzas\n" +
-                    "• Ver tus horas extra\n" +
-                    "• Información sobre permisos y vacaciones\n" +
-                    "• Tu horario de trabajo\n" +
-                    "• Estado de tu nómina\n\n" +
-                    "¿En qué puedo ayudarte?";
-        }
-
-        // 10. AYUDA
-        if (mensaje.contains("ayuda") || mensaje.contains("qué puedes") ||
-                mensaje.contains("que haces")) {
-            return "🤖 Puedo ayudarte con:\n\n" +
-                    "📊 Tardanzas y asistencias\n" +
-                    "⏱️ Horas extra trabajadas\n" +
-                    "📄 Solicitudes de permisos\n" +
-                    "🏖️ Vacaciones\n" +
-                    "🕐 Horarios de trabajo\n" +
-                    "💰 Información de nómina\n" +
-                    "⚠️ Ausencias y faltas\n\n" +
-                    "Pregúntame cualquier cosa sobre estos temas.";
-        }
-
-        if (mensaje.contains("gracias") || mensaje.contains("muchas")){
-            return "Un gusto servirte 👋";
-        }
-
-        // RESPUESTA POR DEFECTO
-        return "🤔 No estoy seguro de entender tu pregunta.\n\n" +
-                "Puedo ayudarte con:\n" +
-                "• Tardanzas y asistencias\n" +
-                "• Horas extra\n" +
-                "• Permisos y vacaciones\n" +
-                "• Horarios\n" +
-                "• Nómina\n\n" +
-                "Escribe 'ayuda' para ver todas las opciones.";
+        // 3. Construir el "paquete" de información para la IA
+        return String.format(
+                "Usuario: %s. %s. Tardanzas en el mes actual: %d. Horas extra acumuladas: %.2f. " +
+                        "Cargo: %s.",
+                emp.getNombre(),
+                infoTurno,
+                tardanzas,
+                horasExtra,
+                emp.getCargo().getNombre()
+        );
     }
 }
-
-
 
 
 
