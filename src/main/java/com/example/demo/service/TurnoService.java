@@ -180,5 +180,11 @@ public class TurnoService {
 
             asignacionTurnoRepository.deleteAll(asignaciones);
         }
+
+    public AsignacionTurno buscarTurnoPorEmpleadoYFecha(Long empleadoId, LocalDate fecha) {
+        // Buscamos la asignación específica para ese día
+        return asignacionTurnoRepository.findByEmpleadoIdAndFecha(empleadoId, fecha)
+                .orElse(null); // Retorna null si no tiene turno ese día
+    }
     }
 
