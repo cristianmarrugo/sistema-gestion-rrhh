@@ -1,0 +1,10 @@
+.prediction-card {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+.bg-light-danger { background-color: #fff5f5; border: 1px solid #feb2b2; }
+.bg-light-success { background-color: #f0fff4; border: 1px solid #9ae6b4; }
+.custom-select { height: 45px; border-radius: 8px; }
+.form-control { height: 45px; border-radius: 8px; }tual { border-color: #4caf50; background: #e8f5e9; color: #2e7d32; }
