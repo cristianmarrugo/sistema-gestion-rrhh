@@ -76,6 +76,13 @@
             <a href="/reportes/asistencias"><i class="fas fa-file-alt"></i> Reporte Asistencias</a>
             <a href="/api/nomina/exportar"><i class="fas fa-file-csv"></i> Exportar Nómina</a>
             <a href="/dashboard-powerbi"><i class="fas fa-chart-pie"></i> Análisis Power BI</a>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/prediccion}">
+                    <i class="fas fa-brain"></i>
+                    <span>Modulo predictivo</span>
+                </a>
+            </li>
         </div>
 
         <li class="nav-item" th:if="${empleado.rol.toString() == 'EMPLEADO'}">
