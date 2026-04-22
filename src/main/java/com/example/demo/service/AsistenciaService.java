@@ -172,7 +172,6 @@ public class AsistenciaService {
     }
 
 
-    // 🕒 MARCAR ENTRADA / SALIDA
     public Asistencia marcarAsistencia(String pin) {
 
         Empleado empleado = empleadoRepository.findByPin(pin)
@@ -185,42 +184,61 @@ public class AsistenciaService {
         LocalDate hoy = LocalDate.now();
         LocalTime ahora = LocalTime.now();
 
+        if (permisoRepository.existsPermisoActivo(empleado, hoy)) {
+            throw new RuntimeException("Usted tiene un permiso activo para hoy, no puede marcar asistencia.");
+        }
+
+        if(vacacionRepository.existsVacacionActiva(empleado, hoy)){
+            throw new RuntimeException("Usted tiene vacaciones activas, no puede marcar asistencia");
+        }
+
         Optional<Asistencia> asistenciaOpt =
                 asistenciaRepository.findByEmpleadoAndFecha(empleado, hoy);
 
-        // 👉 SALIDA
+        // 👉 LÓGICA DE SALIDA
         if (asistenciaOpt.isPresent()) {
             Asistencia asistencia = asistenciaOpt.get();
+
+            // 🛑 BLOQUE DE IDEMPOTENCIA (Anti Doble Clic)
+            if (asistencia.getHoraSalida() != null) {
+                throw new RuntimeException("Ya has registrado tu entrada y salida por el día de hoy.");
+            }
+
+            // Validar que hayan pasado al menos 1 minuto desde la entrada
+            // Esto evita que un doble clic marque entrada y salida al mismo tiempo
+            long segundosTranscurridos = java.time.Duration.between(asistencia.getHoraEntrada(), ahora).getSeconds();
+            if (segundosTranscurridos < 300) {
+                throw new RuntimeException("Operación muy rápida. Por favor, espera 5 minutos para marcar tu salida.");
+            }
+            // -------------------------------------------
+
             asistencia.setHoraSalida(ahora);
             calcularHorasExtras(asistencia);
             return asistenciaRepository.save(asistencia);
         }
 
-        // 👉 ENTRADA
+        // 👉 LÓGICA DE ENTRADA
         Asistencia asistencia = new Asistencia();
         asistencia.setEmpleado(empleado);
         asistencia.setFecha(hoy);
         asistencia.setHoraEntrada(ahora);
 
-        // SISTEMA HÍBRIDO: Intentar obtener turno, si no existe usar horario antiguo
+        // Tu lógica de sistema híbrido (Turno/Horario) se mantiene igual...
         Turno turnoDelDia = turnoService.obtenerTurnoEmpleado(empleado.getId(), hoy);
 
         LocalTime horaHorario;
         int tolerancia;
 
         if (turnoDelDia != null) {
-            // Usar turno asignado (nuevo sistema)
             horaHorario = turnoDelDia.getHoraEntrada();
             tolerancia = turnoDelDia.getToleranciaMinutos();
         } else if (empleado.getHorario() != null) {
-            // Fallback al horario fijo (sistema antiguo)
             horaHorario = empleado.getHorario().getHoraEntrada();
             tolerancia = empleado.getHorario().getToleranciaMinutos();
         } else {
             throw new RuntimeException("No tienes horario ni turno asignado para hoy. Contacta a RRHH.");
         }
 
-        // Validar tardanza
         if (ahora.isAfter(horaHorario.plusMinutes(tolerancia))) {
             asistencia.setEstado(EstadoAsistencia.TARDE);
         } else {
