@@ -23,6 +23,8 @@ public class Turno extends Auditable{
     private String codigo; // "M", "T", "N", "A" (para cuadrantes)
 
     private LocalTime horaEntrada;
+
+    @Column(name = "hora_salida")
     private LocalTime horaSalida;
 
     private int toleranciaMinutos = 15;
