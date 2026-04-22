@@ -255,6 +255,8 @@
 
                 <!-- Días reales del mes -->
                 <div th:each="dia : ${#numbers.sequence(1, diasEnMes)}"
+                     th:with="fechaDia=${T(java.time.LocalDate).of(anioSeleccionado, mesSeleccionado, dia)},
+              esPasado=${fechaDia.isBefore(T(java.time.LocalDate).now())}"
                      class="calendar-day"
                      th:classappend="${cuadrante.containsKey(dia) && cuadrante.get(dia).turno == null ? 'day-libre' : ''}"
                      th:onclick="'editarDia(' + ${dia} + ')'"
@@ -323,6 +325,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script th:inline="javascript">
+
   // Obtenemos las variables de Thymeleaf
   const empleadoId = [[${empleadoSeleccionado}]];
   const mes = [[${mesSeleccionado}]];
@@ -339,6 +342,17 @@
           alert('Selecciona un empleado primero');
           return;
       }
+
+      const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0); // Resetear horas para comparar solo fechas
+
+    // Crear la fecha del día seleccionado (Mes en JS es 0-11, por eso mes-1)
+    const fechaSeleccionada = new Date(anio, mes - 1, dia);
+
+    if (fechaSeleccionada < hoy) {
+        alert('No se pueden modificar turnos de fechas pasadas.');
+        return;
+    }
 
       // Guardamos el día en el input oculto y abrimos el modal
       document.getElementById('diaSeleccionado').value = dia;
