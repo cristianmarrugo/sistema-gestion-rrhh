@@ -108,6 +108,7 @@ public class ReportesAsistenciaController {
                     registro.setEstado(asist.getEstado().toString());
                     registro.setHoraEntrada(asist.getHoraEntrada());
                     registro.setHoraSalida(asist.getHoraSalida());
+                    registro.setObservacion(asist.getObservacion());
                     registro.setTipo("ASISTENCIA");
 
                     // Calcular horas extras
@@ -185,6 +186,7 @@ public class ReportesAsistenciaController {
         private LocalTime horaEntradaEsperada;
         private LocalTime horaSalidaEsperada;
         private Double horasExtras;
+        private String observacion;
 
         // Getters y Setters
         public Empleado getEmpleado() { return empleado; }
@@ -213,5 +215,13 @@ public class ReportesAsistenciaController {
 
         public Double getHorasExtras() { return horasExtras; }
         public void setHorasExtras(Double horasExtras) { this.horasExtras = horasExtras; }
+
+        public String getObservacion() {
+            return observacion;
+        }
+
+        public void setObservacion(String observacion) {
+            this.observacion = observacion;
+        }
     }
 }
