@@ -26,6 +26,9 @@ public class Asistencia {
     @Enumerated(EnumType.STRING)
     private EstadoAsistencia estado;
 
+    @Column(name = "observacion")
+    private String observacion;
+
     // Cálculo dinámico para el reporte
     @Transient
     public Double getHorasTotales() {
