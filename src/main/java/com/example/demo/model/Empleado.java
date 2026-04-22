@@ -55,4 +55,8 @@ public class Empleado extends Auditable {
     @ManyToOne
     @JoinColumn(name = "horario_id")
     private Horario horario;
+
+    @ManyToOne
+    @JoinColumn(name = "id_turno")
+    private Turno turno;
 }
