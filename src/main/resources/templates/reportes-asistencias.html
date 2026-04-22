@@ -347,6 +347,11 @@
           <td>
             <div class="horario-info">
               <span class="horario-real" th:text="${reg.horaSalida != null ? reg.horaSalida : '-'}"></span>
+              <small th:if="${reg.observacion != null}"
+                     class="text-primary"
+                     style="font-size: 0.7rem; display: block; font-style: italic;"
+                     th:text="${reg.observacion}">
+              </small>
             </div>
           </td>
           <td th:text="${reg.horaEntrada != null && reg.horaSalida != null ? #numbers.formatDecimal(T(java.time.Duration).between(reg.horaEntrada, reg.horaSalida).toMinutes() / 60.0, 1, 2) + ' h' : '-'}"></td>
