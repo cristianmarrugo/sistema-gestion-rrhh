@@ -73,7 +73,7 @@
 
         <div th:if="${empleado.rol.toString() == 'RRHH' || empleado.rol.toString() == 'ADMIN'}">
             <div class="menu-label">Informes</div>
-            <a href="/reportes/asistencias"><i class="fas fa-file-alt"></i> Reporte Asistencias</a>
+            <a href="/reportes/asistencias" th:if="${empleado.rol.toString() == 'RRHH'}"><i class="fas fa-file-alt"></i> Reporte Asistencias</a>
             <a href="/api/nomina/exportar"><i class="fas fa-file-csv"></i> Exportar Nómina</a>
             <a href="/dashboard-powerbi"><i class="fas fa-chart-pie"></i> Análisis Power BI</a>
 
