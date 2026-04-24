@@ -1,12 +1,16 @@
 package com.example.demo.dto;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Data
 public class AsistenciaStats {
     private long totalNormal;
     private long totalTarde;
     private long totalAusente;
+    @Setter
+    @Getter
     private long totalPermiso;
     private long totalVacaciones;
 
