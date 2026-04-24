@@ -11,4 +11,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     Optional<Empleado> findByDocumento(String documento);
 
     Optional<Object> findByEmail(String email);
+
+    long countByActivoTrue();
 }
