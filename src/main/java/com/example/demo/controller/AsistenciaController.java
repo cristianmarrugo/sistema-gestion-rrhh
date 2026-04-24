@@ -4,6 +4,7 @@ import com.example.demo.model.Asistencia;
 import com.example.demo.model.Empleado;
 import com.example.demo.repository.AsistenciaRepository;
 import com.example.demo.service.AsistenciaService;
+import com.example.demo.service.TareaSalidaAutomatica;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,6 +22,7 @@ import java.util.Optional;
 public class AsistenciaController {
 
     private final AsistenciaService asistenciaService;
+    private final TareaSalidaAutomatica tareaSalidaAutomatica;
     private final AsistenciaRepository asistenciaRepository;
 
     /**
@@ -256,7 +258,7 @@ public class AsistenciaController {
         }
 
         System.out.println("🔧 [API] Ejecutando job de salidas MANUALMENTE...");
-        asistenciaService.marcarSalidasOlvidadas();
+        tareaSalidaAutomatica.cerrarTurnosOlvidados();
         return ResponseEntity.ok("✅ Job de salidas ejecutado. Revisa la consola para ver los logs.");
     }
 }
