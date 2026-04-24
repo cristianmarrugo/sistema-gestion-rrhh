@@ -17,4 +17,7 @@ public interface PermisoRepository extends JpaRepository<Permiso, Long> {
             """)
 
     boolean existsPermisoActivo(Empleado empleado, LocalDate fecha);
+
+    @Query("SELECT COUNT(p) FROM Permiso p WHERE p.estado = 'APROBADO' AND :fecha BETWEEN p.fechaInicio AND p.fechaFin")
+    long countPermisosActivos(LocalDate fecha);
 }
