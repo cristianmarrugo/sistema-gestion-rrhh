@@ -118,47 +118,6 @@ public class AsistenciaService {
         System.out.println("   - Sin horario: " + sinHorario);
     }
 
-    // 🔁 JOB AUTOMÁTICO PARA MARCAR SALIDAS OLVIDADAS (23:30 cada día)
-    // 🔁 JOB AUTOMÁTICO PARA MARCAR SALIDAS OLVIDADAS (23:30 cada día)
-    @Scheduled(cron = "0 30 23 * * ?")
-    public void marcarSalidasOlvidadas() {
-        LocalDate hoy = LocalDate.now();
-        // 💡 Mejora Senior: Solo traemos empleados activos para ahorrar memoria
-        List<Empleado> empleadosActivos = empleadoRepository.findAll().stream()
-                .filter(Empleado::isActivo)
-                .toList();
-
-        System.out.println("🔄 [JOB SALIDAS] Procesando salidas pendientes para: " + hoy);
-        AtomicInteger salidasMarcadas = new AtomicInteger(0);
-
-        for (Empleado empleado : empleadosActivos) {
-            // Buscamos la asistencia de hoy que tenga entrada pero NO salida
-            asistenciaRepository.findByEmpleadoAndFecha(empleado, hoy).ifPresent(asistencia -> {
-                if (asistencia.getHoraEntrada() != null && asistencia.getHoraSalida() == null) {
-
-                    // 💡 Lógica de Negocio: Obtener la hora teórica de salida
-                    Turno turnoDelDia = turnoService.obtenerTurnoEmpleado(empleado.getId(), hoy);
-                    LocalTime horaSalidaTeorica = null;
-
-                    if (turnoDelDia != null) {
-                        horaSalidaTeorica = turnoDelDia.getHoraSalida();
-                    } else if (empleado.getHorario() != null) {
-                        horaSalidaTeorica = empleado.getHorario().getHoraSalida();
-                    }
-
-                    if (horaSalidaTeorica != null) {
-                        asistencia.setHoraSalida(horaSalidaTeorica);
-                        // 💡 IMPORTANTE: No llamamos a calcularHorasExtras() aquí.
-                        // Como castigo/incentivo, solo le reconocemos su horario base.
-                        asistenciaRepository.save(asistencia);
-                        salidasMarcadas.incrementAndGet();
-                        System.out.println("  ⚠️ Salida forzada: " + empleado.getNombre() + " -> " + horaSalidaTeorica);
-                    }
-                }
-            });
-        }
-        System.out.println("✅ [JOB SALIDAS] Finalizado. Total: " + salidasMarcadas);
-    }
 
     public boolean llegoTardeHoy(Empleado empleado) {
         return asistenciaRepository
