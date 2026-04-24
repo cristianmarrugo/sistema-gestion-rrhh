@@ -115,10 +115,10 @@ public class LoginController {
             // Ausentes = Total - (Normales + Tardes + Permisos + Vacaciones)
             long totalAusente = totalEmpleadosActivos - (totalNormal + totalTarde + totalPermiso + totalVacaciones);
 
-// Si por algún error de datos da negativo, lo reseteamos a 0
+            // Si por algún error de datos da negativo, lo reseteamos a 0
             if (totalAusente < 0) totalAusente = 0;
 
-// 4. Pasar todo al modelo
+            // 4. Pasar todo al modelo
             model.addAttribute("totalNormal", totalNormal);
             model.addAttribute("totalTarde", totalTarde);
             model.addAttribute("totalPermiso", totalPermiso);
