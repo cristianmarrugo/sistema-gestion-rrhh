@@ -6,6 +6,8 @@ import com.example.demo.repository.AsignacionTurnoRepository;
 import com.example.demo.repository.AsistenciaRepository;
 import lombok.extern.slf4j.Slf4j; // Para ver logs profesionales
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -23,8 +25,14 @@ public class TareaSalidaAutomatica {
     @Autowired
     private AsignacionTurnoRepository asignacionTurnoRepository;
 
-    // Se ejecuta todos los días a las 2:00 AM
-    @Scheduled(cron = "0 0 2 * * *")
+//    @EventListener(ContextRefreshedEvent.class)
+//    public void alIniciar() {
+//        log.info("🚀 Servidor iniciado. Ejecutando limpieza de seguridad...");
+//        cerrarTurnosOlvidados();
+//    }
+
+    // Se ejecuta todos los días a las 11:00 AM
+    @Scheduled(cron = "0 0 11 * * *", zone = "America/Bogota")
     public void cerrarTurnosOlvidados() {
         LocalDate ayer = LocalDate.now().minusDays(1);
         log.info("Iniciando cierre automático para la fecha: {}", ayer);
