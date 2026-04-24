@@ -17,4 +17,7 @@ public interface VacacionRepository extends JpaRepository<Vacacion, Long> {
 """)
 boolean existsVacacionActiva(Empleado empleado, LocalDate fecha);
 
+    @Query("SELECT COUNT(v) FROM Vacacion v WHERE v.estado = 'APROBADO' AND :fecha BETWEEN v.fechaInicio AND v.fechaFin")
+    long countVacacionesActivas(LocalDate fecha);
+
 }
