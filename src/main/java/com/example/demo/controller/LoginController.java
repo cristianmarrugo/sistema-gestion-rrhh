@@ -2,6 +2,9 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Empleado;
 import com.example.demo.repository.AsistenciaRepository;
+import com.example.demo.repository.EmpleadoRepository;
+import com.example.demo.repository.PermisoRepository;
+import com.example.demo.repository.VacacionRepository;
 import com.example.demo.service.AsistenciaService;
 import com.example.demo.service.EmpleadoService;
 import jakarta.servlet.http.HttpSession;
@@ -23,6 +26,12 @@ public class LoginController {
     private final AsistenciaService asistenciaService;
 
     private final AsistenciaRepository asistenciaRepository;
+
+    private final PermisoRepository permisoRepository;
+
+    private final VacacionRepository vacacionRepository;
+
+    private final EmpleadoRepository empleadoRepository;
 
     @GetMapping("/")
     public String home() {
@@ -92,17 +101,29 @@ public class LoginController {
         if (!"EMPLEADO".equals(empleado.getRol().toString())) {
             LocalDate hoy = LocalDate.now();
 
-            // LLAMADA CLAVE: Usamos la misma lógica de tu reporte
-            // Filtramos: desde HOY, hasta HOY, todos los empleados, todos los estados
+            // 1. Datos básicos de asistencias que SÍ existen
             var stats = asistenciaService.obtenerEstadisticas(hoy, hoy, null, "TODOS");
+            long totalNormal = stats.getTotalNormal();
+            long totalTarde = stats.getTotalTarde();
 
-            // Pasamos los datos exactos que calculó tu servicio
-            model.addAttribute("totalNormal", stats.getTotalNormal());
-            model.addAttribute("totalTarde", stats.getTotalTarde());
-            model.addAttribute("totalAusente", stats.getTotalAusente());
-            model.addAttribute("totalPermiso", stats.getTotalPermiso());
-            model.addAttribute("totalVacaciones", stats.getTotalVacaciones());
+            // 2. Datos de Permisos y Vacaciones (Directo de sus tablas)
+            long totalPermiso = permisoRepository.countPermisosActivos(hoy);
+            long totalVacaciones = vacacionRepository.countVacacionesActivas(hoy);
 
+            // 3. CÁLCULO DE AUSENTES (La clave)
+            long totalEmpleadosActivos = empleadoRepository.countByActivoTrue();
+            // Ausentes = Total - (Normales + Tardes + Permisos + Vacaciones)
+            long totalAusente = totalEmpleadosActivos - (totalNormal + totalTarde + totalPermiso + totalVacaciones);
+
+// Si por algún error de datos da negativo, lo reseteamos a 0
+            if (totalAusente < 0) totalAusente = 0;
+
+// 4. Pasar todo al modelo
+            model.addAttribute("totalNormal", totalNormal);
+            model.addAttribute("totalTarde", totalTarde);
+            model.addAttribute("totalPermiso", totalPermiso);
+            model.addAttribute("totalVacaciones", totalVacaciones);
+            model.addAttribute("totalAusente", totalAusente); // <--- Ahora sí será real
             // La lista de los últimos 5 para la tabla de actividad
             model.addAttribute("recientes", asistenciaRepository.findTop5ByFechaOrderByHoraEntradaDesc(hoy));
         }
