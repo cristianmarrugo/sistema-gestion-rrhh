@@ -67,23 +67,24 @@
             <a href="/cargos" th:if="${empleado.rol.toString() == 'ADMIN'}"><i class="fas fa-briefcase"></i> Cargos</a>
             <a href="/permisos/pendientes"><i class="fas fa-check-circle"></i> Permisos Pendientes</a>
             <a href="/vacaciones/pendientes"><i class="fas fa-calendar-check"></i> Vacaciones Pendientes</a>
-            <a href="/turnos"><i class="fas fa-sync-alt"></i> Gestionar Turnos</a>
-            <a href="/cuadrantes"><i class="fas fa-calendar-alt"></i> Cuadrantes Mensuales</a>
+            <a href="/turnos" th:if="${empleado.rol.toString() == 'ADMIN'}"><i class="fas fa-sync-alt"></i> Gestionar Turnos</a>
+            <a href="/cuadrantes" th:if="${empleado.rol.toString() == 'RRHH'}"><i class="fas fa-calendar-alt"></i> Cuadrantes Mensuales</a>
         </div>
 
         <div th:if="${empleado.rol.toString() == 'RRHH' || empleado.rol.toString() == 'ADMIN'}">
             <div class="menu-label">Informes</div>
             <a href="/reportes/asistencias" th:if="${empleado.rol.toString() == 'RRHH'}"><i class="fas fa-file-alt"></i> Reporte Asistencias</a>
             <a href="/api/nomina/exportar"><i class="fas fa-file-csv"></i> Exportar Nómina</a>
-            <a href="/dashboard-powerbi"><i class="fas fa-chart-pie"></i> Análisis Power BI</a>
+            <a href="/dashboard-powerbi" th:if="${empleado.rol.toString() == 'RRHH'}"><i class="fas fa-chart-pie"></i> Análisis Power BI</a>
 
-            <li class="nav-item">
+            <li class="nav-item" th:if="${empleado.rol.toString() == 'ADMIN'}">
                 <a class="nav-link" th:href="@{/prediccion}">
                     <i class="fas fa-brain"></i>
                     <span>Modulo predictivo</span>
                 </a>
             </li>
         </div>
+        <div class="menu-label" th:if="${empleado.rol.toString() == 'EMPLEADO'}">Informes</div>
 
         <li class="nav-item" th:if="${empleado.rol.toString() == 'EMPLEADO'}">
             <a class="nav-link" th:href="@{/empleado/perfil}">
