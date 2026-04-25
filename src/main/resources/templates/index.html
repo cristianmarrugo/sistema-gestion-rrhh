@@ -97,7 +97,7 @@
         <a href="/asistencia"><i class="fas fa-user-clock"></i> Mi Asistencia</a>
         <a href="/permisos" th:if="${empleado.rol.toString() == 'EMPLEADO'}"><i class="fas fa-paper-plane"></i> Solicitar Permiso</a>
         <a href="/vacaciones" th:if="${empleado.rol.toString() == 'EMPLEADO'}"><i class="fas fa-umbrella-beach"></i> Solicitar Vacaciones</a>
-        <a href="/cuadrantes" th:if="${empleado.rol.toString() == 'EMPLEADO'}"><i class="fas fa-calendar-alt"></i> Ver mi horario</a>
+        <a href="/cuadrantes/mi-horario"><i class="fas fa-calendar-alt"></i> Ver mi horario</a>
         <a href="/nomina/mi-nomina"><i class="fas fa-wallet"></i> Mi Nómina</a>
 
         <div th:if="${empleado.rol.toString() == 'ADMIN'}">
