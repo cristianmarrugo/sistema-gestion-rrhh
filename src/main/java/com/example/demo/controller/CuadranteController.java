@@ -81,7 +81,26 @@ public class CuadranteController {
         model.addAttribute("cuadrante", cuadrante);
         model.addAttribute("diasEnMes", diasEnMes);
 
+        // Solo ponemos /cuadrantes si nadie ha puesto otra URL antes
+        if (!model.containsAttribute("urlFormulario")) {
+            model.addAttribute("urlFormulario", "/cuadrantes");
+        }
         return "cuadrantes/ver";
+    }
+
+    @GetMapping("/mi-horario")
+    public String verMiPropioHorario(HttpSession session, Model model,
+                                     @RequestParam(required = false) Integer mes,
+                                     @RequestParam(required = false) Integer anio) {
+        Empleado empleadoLogueado = (Empleado) session.getAttribute("empleado");
+        if (empleadoLogueado == null) return "redirect:/login";
+
+        // Pasamos una bandera para ocultar los controles de gestión
+        model.addAttribute("esVistaPersonal", true);
+
+        model.addAttribute("urlFormulario", "/cuadrantes/mi-horario");
+
+        return verCuadrante(mes, anio, empleadoLogueado.getId(), session, model);
     }
 
     /**
