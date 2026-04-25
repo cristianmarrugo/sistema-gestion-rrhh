@@ -166,8 +166,8 @@ public class AsistenciaService {
             // Validar que hayan pasado al menos 1 minuto desde la entrada
             // Esto evita que un doble clic marque entrada y salida al mismo tiempo
             long segundosTranscurridos = java.time.Duration.between(asistencia.getHoraEntrada(), ahora).getSeconds();
-            if (segundosTranscurridos < 300) {
-                throw new RuntimeException("Operación muy rápida. Por favor, espera 5 minutos para marcar tu salida.");
+            if (segundosTranscurridos < 7200) {
+                throw new RuntimeException("Operación muy rápida. Por favor, espera minimo 2 horas para marcar tu salida.");
             }
             // -------------------------------------------
 
