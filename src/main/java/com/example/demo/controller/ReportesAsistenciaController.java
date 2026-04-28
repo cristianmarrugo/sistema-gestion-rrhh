@@ -50,13 +50,11 @@ public class ReportesAsistenciaController {
             return "redirect:/login";
         }
 
-        // Solo ADMIN y RRHH pueden ver reportes
         if (!"ADMIN".equals(usuarioLogueado.getRol().toString()) &&
                 !"RRHH".equals(usuarioLogueado.getRol().toString())) {
             return "redirect:/index";
         }
 
-        // Si no se especifican fechas, usar hoy
         if (fechaDesde == null) {
             fechaDesde = LocalDate.now();
         }
@@ -64,21 +62,17 @@ public class ReportesAsistenciaController {
             fechaHasta = fechaDesde;
         }
 
-        // Obtener todos los empleados activos
         List<Empleado> empleados = empleadoRepository.findAll()
                 .stream()
                 .filter(Empleado::isActivo)
                 .sorted((a, b) -> a.getNombre().compareTo(b.getNombre()))
                 .collect(Collectors.toList());
 
-        // Crear lista de registros para el reporte
         List<RegistroReporte> registros = new ArrayList<>();
 
-        // Iterar por cada día del rango
         LocalDate fechaActual = fechaDesde;
         while (!fechaActual.isAfter(fechaHasta)) {
             for (Empleado emp : empleados) {
-                // Filtrar por empleado si se especifica
                 if (empleadoId != null && !emp.getId().equals(empleadoId)) {
                     continue;
                 }
@@ -87,7 +81,6 @@ public class ReportesAsistenciaController {
                 registro.setEmpleado(emp);
                 registro.setFecha(fechaActual);
 
-                // Obtener turno del día para horarios esperados
                 Turno turnoDelDia = turnoService.obtenerTurnoEmpleado(emp.getId(), fechaActual);
 
                 if (turnoDelDia != null) {
@@ -98,12 +91,10 @@ public class ReportesAsistenciaController {
                     registro.setHoraSalidaEsperada(emp.getHorario().getHoraSalida());
                 }
 
-                // Buscar asistencia
                 Optional<Asistencia> asistenciaOpt = asistenciaRepository
                         .findByEmpleadoAndFecha(emp, fechaActual);
 
                 if (asistenciaOpt.isPresent()) {
-                    // TIENE ASISTENCIA MARCADA
                     Asistencia asist = asistenciaOpt.get();
                     registro.setEstado(asist.getEstado().toString());
                     registro.setHoraEntrada(asist.getHoraEntrada());
@@ -111,7 +102,6 @@ public class ReportesAsistenciaController {
                     registro.setObservacion(asist.getObservacion());
                     registro.setTipo("ASISTENCIA");
 
-                    // Calcular horas extras
                     if (asist.getHoraSalida() != null && registro.getHoraSalidaEsperada() != null) {
                         if (asist.getHoraSalida().isAfter(registro.getHoraSalidaEsperada())) {
                             long minutos = Duration.between(registro.getHoraSalidaEsperada(), asist.getHoraSalida()).toMinutes();
@@ -119,7 +109,7 @@ public class ReportesAsistenciaController {
                         }
                     }
                 } else {
-                    // NO TIENE ASISTENCIA, verificar permisos y vacaciones
+                    // MODIFICACIÓN: Lógica de Descanso vs Ausente
                     boolean tienePermiso = permisoRepository.existsPermisoActivo(emp, fechaActual);
                     boolean tieneVacaciones = vacacionRepository.existsVacacionActiva(emp, fechaActual);
 
@@ -130,13 +120,17 @@ public class ReportesAsistenciaController {
                         registro.setEstado("VACACIONES");
                         registro.setTipo("VACACIONES");
                     } else {
-                        // No tiene nada registrado
-                        registro.setEstado("AUSENTE");
-                        registro.setTipo("AUSENTE");
+                        // Si no tiene marca, ni permiso, ni vacaciones, verificamos el cuadrante
+                        if (turnoDelDia != null) {
+                            registro.setEstado("AUSENTE");
+                            registro.setTipo("AUSENTE");
+                        } else {
+                            registro.setEstado("DESCANSO");
+                            registro.setTipo("DESCANSO");
+                        }
                     }
                 }
 
-                // Filtrar por estado si se especifica
                 if (estado != null && !estado.isEmpty() && !estado.equals("TODOS")) {
                     if (!registro.getEstado().equals(estado)) {
                         continue;
@@ -148,27 +142,20 @@ public class ReportesAsistenciaController {
             fechaActual = fechaActual.plusDays(1);
         }
 
-        // Calcular estadísticas
-        long totalNormal = registros.stream().filter(r -> "NORMAL".equals(r.getEstado())).count();
-        long totalTarde = registros.stream().filter(r -> "TARDE".equals(r.getEstado())).count();
-        long totalAusente = registros.stream().filter(r -> "AUSENTE".equals(r.getEstado())).count();
-        long totalPermiso = registros.stream().filter(r -> "PERMISO".equals(r.getEstado())).count();
-        long totalVacaciones = registros.stream().filter(r -> "VACACIONES".equals(r.getEstado())).count();
-
+        // ESTADÍSTICAS FINALES (Manteniendo tu estilo de filtrado)
         model.addAttribute("registros", registros);
+        model.addAttribute("totalNormal", registros.stream().filter(r -> "NORMAL".equals(r.getEstado())).count());
+        model.addAttribute("totalTarde", registros.stream().filter(r -> "TARDE".equals(r.getEstado())).count());
+        model.addAttribute("totalAusente", registros.stream().filter(r -> "AUSENTE".equals(r.getEstado())).count());
+        model.addAttribute("totalPermiso", registros.stream().filter(r -> "PERMISO".equals(r.getEstado())).count());
+        model.addAttribute("totalVacaciones", registros.stream().filter(r -> "VACACIONES".equals(r.getEstado())).count());
+        model.addAttribute("totalDescanso", registros.stream().filter(r -> "DESCANSO".equals(r.getEstado())).count());
+
+        model.addAttribute("empleados", empleados);
         model.addAttribute("fechaDesde", fechaDesde);
         model.addAttribute("fechaHasta", fechaHasta);
-        model.addAttribute("fechaSeleccionada", fechaDesde);
         model.addAttribute("empleadoSeleccionado", empleadoId);
         model.addAttribute("estadoSeleccionado", estado);
-        model.addAttribute("empleados", empleados);
-
-        // Estadísticas
-        model.addAttribute("totalNormal", totalNormal);
-        model.addAttribute("totalTarde", totalTarde);
-        model.addAttribute("totalAusente", totalAusente);
-        model.addAttribute("totalPermiso", totalPermiso);
-        model.addAttribute("totalVacaciones", totalVacaciones);
 
         return "reportes-asistencias";
     }
