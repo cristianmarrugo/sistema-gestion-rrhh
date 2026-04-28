@@ -1,10 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Empleado;
-import com.example.demo.repository.AsistenciaRepository;
-import com.example.demo.repository.EmpleadoRepository;
-import com.example.demo.repository.PermisoRepository;
-import com.example.demo.repository.VacacionRepository;
+import com.example.demo.repository.*;
 import com.example.demo.service.AsistenciaService;
 import com.example.demo.service.EmpleadoService;
 import jakarta.servlet.http.HttpSession;
@@ -32,6 +29,8 @@ public class LoginController {
     private final VacacionRepository vacacionRepository;
 
     private final EmpleadoRepository empleadoRepository;
+
+    private final AsignacionTurnoRepository asignacionTurnoRepository;
 
     @GetMapping("/")
     public String home() {
@@ -106,25 +105,41 @@ public class LoginController {
             long totalNormal = stats.getTotalNormal();
             long totalTarde = stats.getTotalTarde();
 
-            // 2. Datos de Permisos y Vacaciones (Directo de sus tablas)
+            // 2. Datos de Permisos y Vacaciones
             long totalPermiso = permisoRepository.countPermisosActivos(hoy);
             long totalVacaciones = vacacionRepository.countVacacionesActivas(hoy);
 
-            // 3. CÁLCULO DE AUSENTES (La clave)
-            long totalEmpleadosActivos = empleadoRepository.countByActivoTrue();
-            // Ausentes = Total - (Normales + Tardes + Permisos + Vacaciones)
-            long totalAusente = totalEmpleadosActivos - (totalNormal + totalTarde + totalPermiso + totalVacaciones);
+            // 3. CÁLCULO DE DESCANSOS (Excluyendo a los que ya tienen Permiso o Vacaciones)
+            long totalDescanso = empleadoRepository.findAll().stream()
+                    .filter(Empleado::isActivo)
+                    .filter(emp -> {
+                        // No debe tener turno hoy
+                        boolean sinTurno = asignacionTurnoRepository.findByEmpleadoIdAndFecha(emp.getId(), hoy).isEmpty();
+                        // No debe estar en vacaciones hoy
+                        boolean sinVacaciones = !vacacionRepository.existsVacacionActiva(emp, hoy);
+                        // No debe tener permiso hoy
+                        boolean sinPermiso = !permisoRepository.existsPermisoActivo(emp, hoy);
 
-            // Si por algún error de datos da negativo, lo reseteamos a 0
+                        return sinTurno && sinVacaciones && sinPermiso;
+                    })
+                    .count();
+
+            // 4. CÁLCULO DE AUSENTES
+            long totalEmpleadosActivos = empleadoRepository.countByActivoTrue();
+
+            // Ausentes = Total - (Los que vinieron + Los que tienen novedad + Los que descansan)
+            long totalAusente = totalEmpleadosActivos - (totalNormal + totalTarde + totalPermiso + totalVacaciones + totalDescanso);
+
             if (totalAusente < 0) totalAusente = 0;
 
-            // 4. Pasar todo al modelo
+            // 5. Pasar todo al modelo
             model.addAttribute("totalNormal", totalNormal);
             model.addAttribute("totalTarde", totalTarde);
             model.addAttribute("totalPermiso", totalPermiso);
             model.addAttribute("totalVacaciones", totalVacaciones);
-            model.addAttribute("totalAusente", totalAusente); // <--- Ahora sí será real
-            // La lista de los últimos 5 para la tabla de actividad
+            model.addAttribute("totalDescanso", totalDescanso); // Este ahora será el número real filtrado
+            model.addAttribute("totalAusente", totalAusente);
+
             model.addAttribute("recientes", asistenciaRepository.findTop5ByFechaOrderByHoraEntradaDesc(hoy));
         }
 
