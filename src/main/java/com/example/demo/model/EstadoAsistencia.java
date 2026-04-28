@@ -5,5 +5,6 @@ public enum EstadoAsistencia {
     TARDE,
     AUSENTE,
     PERMISO,
-    VACACIONES
+    VACACIONES,
+    DESCANSO
 }
