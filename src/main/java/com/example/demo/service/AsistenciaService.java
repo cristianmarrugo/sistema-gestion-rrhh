@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.dto.AsistenciaStats;
 import com.example.demo.model.*;
 import com.example.demo.repository.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -12,8 +13,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 
+
+@Slf4j
 @Service
 public class AsistenciaService {
 
@@ -36,7 +38,10 @@ public class AsistenciaService {
     private TurnoRepository turnoRepository;
 
     @Autowired
-    TurnoService turnoService;
+    private TurnoService turnoService;
+
+    @Autowired
+    private AsignacionTurnoRepository asignacionTurnoRepository;
 
     // 🔁 JOB AUTOMÁTICO DE AUSENCIAS (23:00 cada día)
     @Scheduled(cron = "0 0 23 * * ?")
@@ -182,21 +187,27 @@ public class AsistenciaService {
         asistencia.setFecha(hoy);
         asistencia.setHoraEntrada(ahora);
 
-        // Tu lógica de sistema híbrido (Turno/Horario) se mantiene igual...
-        Turno turnoDelDia = turnoService.obtenerTurnoEmpleado(empleado.getId(), hoy);
+        LocalTime horaHorario = null;
+        Integer tolerancia = 0;
 
-        LocalTime horaHorario;
-        int tolerancia;
+        // 2. Buscar la asignación en el cuadrante
+        Optional<AsignacionTurno> asignacionOpt = asignacionTurnoRepository
+                .findByEmpleadoIdAndFecha(empleado.getId(), hoy);
 
-        if (turnoDelDia != null) {
-            horaHorario = turnoDelDia.getHoraEntrada();
-            tolerancia = turnoDelDia.getToleranciaMinutos();
-        } else if (empleado.getHorario() != null) {
-            horaHorario = empleado.getHorario().getHoraEntrada();
-            tolerancia = empleado.getHorario().getToleranciaMinutos();
-        } else {
-            throw new RuntimeException("No tienes horario ni turno asignado para hoy. Contacta a RRHH.");
+        // 3. Lógica de asignación de valores
+        if (asignacionOpt.isPresent() && asignacionOpt.get().getTurno() != null) {
+            // Si hay turno en el cuadrante, mandan esos datos
+            horaHorario = asignacionOpt.get().getTurno().getHoraEntrada();
+            tolerancia = asignacionOpt.get().getTurno().getToleranciaMinutos();
         }
+
+        else {
+            // Si no hay nada en el cuadrante, lanzamos el error
+            throw new RuntimeException("No tienes un turno programado para hoy (Día de descanso).");
+        }
+
+        // 4. Ahora ya puedes usar horaHorario y tolerancia aquí abajo sin errores
+        log.info("Validando entrada con horario: {} y tolerancia: {} min", horaHorario, tolerancia);
 
         if (ahora.isAfter(horaHorario.plusMinutes(tolerancia))) {
             asistencia.setEstado(EstadoAsistencia.TARDE);
