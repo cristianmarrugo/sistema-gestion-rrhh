@@ -59,18 +59,34 @@ public class PermisoController {
 
     // Aprobar permiso (ADMIN/RRHH)
     @PutMapping("/{id}/aprobar")
-    public ResponseEntity<Permiso> aprobar(@PathVariable Long id) {
-        return permisoService.aprobar(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> aprobar(@PathVariable Long id, HttpSession session) {
+        Empleado adminLogueado = (Empleado) session.getAttribute("empleado");
+
+        if (adminLogueado == null) {
+            return ResponseEntity.status(401).body("No autenticado");
+        }
+
+        try {
+            // LLAMAMOS AL MÉTODO QUE TIENE LA VALIDACIÓN DE SEGURIDAD
+            permisoService.autorizarPermiso(id, adminLogueado.getNombre(), adminLogueado);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            // Aquí es donde capturamos el "No puedes aprobar tu propia solicitud"
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
-    // Rechazar permiso (ADMIN/RRHH)
     @PutMapping("/{id}/rechazar")
-    public ResponseEntity<Permiso> rechazar(@PathVariable Long id) {
-        return permisoService.rechazar(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> rechazar(@PathVariable Long id, HttpSession session) {
+        Empleado admin = (Empleado) session.getAttribute("empleado");
+        if (admin == null) return ResponseEntity.status(401).body("No autenticado");
+
+        try {
+            permisoService.rechazarPermiso(id, admin);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // Eliminar permiso
