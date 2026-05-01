@@ -132,7 +132,7 @@ public class VacacionService {
      * Aprobar vacaciones
      */
     @Transactional
-    public Vacacion aprobar(Long id) {
+    public Vacacion aprobar(Long id, Empleado administradorLogueado) {
         Vacacion vacacion = vacacionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Vacación no encontrada"));
 
@@ -140,6 +140,9 @@ public class VacacionService {
             throw new RuntimeException(
                     "Estas vacaciones ya fueron " + vacacion.getEstado().toString().toLowerCase()
             );
+        }
+        if (vacacion.getEmpleado().getId().equals(administradorLogueado.getId())) {
+            throw new RuntimeException("Acceso denegado: Un usuario de RRHH no puede aprobar sus propias vacaciones.");
         }
 
         vacacion.setEstado(EstadoSolicitud.APROBADO);
@@ -150,14 +153,17 @@ public class VacacionService {
      * Rechazar vacaciones
      */
     @Transactional
-    public Vacacion rechazar(Long id) {
+    public Vacacion rechazar(Long id, Empleado administradorLogueado) {
         Vacacion vacacion = vacacionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Vacación no encontrada"));
 
         if (vacacion.getEstado() != EstadoSolicitud.PENDIENTE) {
-            throw new RuntimeException(
-                    "Estas vacaciones ya fueron " + vacacion.getEstado().toString().toLowerCase()
-            );
+            throw new RuntimeException("Esta solicitud ya no está pendiente.");
+        }
+
+        // VALIDACIÓN DE SEGURIDAD
+        if (vacacion.getEmpleado().getId().equals(administradorLogueado.getId())) {
+            throw new RuntimeException("Acceso denegado: No puedes rechazar tus propias vacaciones.");
         }
 
         vacacion.setEstado(EstadoSolicitud.RECHAZADO);
