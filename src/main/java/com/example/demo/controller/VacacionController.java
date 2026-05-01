@@ -158,9 +158,8 @@ public class VacacionController {
             return ResponseEntity.status(403)
                     .body("Solo ADMIN y RRHH pueden aprobar vacaciones");
         }
-
         try {
-            Vacacion vacacion = vacacionService.aprobar(id);
+            Vacacion vacacion = vacacionService.aprobar(id, empleado);
             return ResponseEntity.ok(vacacion);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -190,7 +189,7 @@ public class VacacionController {
         }
 
         try {
-            Vacacion vacacion = vacacionService.rechazar(id);
+            Vacacion vacacion = vacacionService.rechazar(id, empleado);
             return ResponseEntity.ok(vacacion);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
