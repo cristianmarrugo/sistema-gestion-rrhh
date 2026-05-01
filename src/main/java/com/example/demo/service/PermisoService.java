@@ -30,14 +30,19 @@ public class PermisoService {
     }
 
     @Transactional
-    public void autorizarPermiso(Long permisoId, String nombreAdmin) {
+    public void autorizarPermiso(Long permisoId, String nombreAdmin,Empleado administradorLogueado ) {
         Permiso permiso =  permisoRepository.findById(permisoId)
                 .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
+
+        // VALIDACIÓN CLAVE: El admin no puede ser el mismo que solicita
+        if (permiso.getEmpleado().getId().equals(administradorLogueado.getId())) {
+            throw new RuntimeException("Seguridad: No puedes aprobar tu propia solicitud de permiso. Debe hacerlo otro empleado de recursos humanos.");
+        }
 
         // Al cambiar estos valores, Envers creará un nuevo registro en la tabla _AUD
         permiso.setEstado(EstadoSolicitud.APROBADO);
         permiso.setAprobadoPor(nombreAdmin);
-
+        permiso.setAprobadoPor(administradorLogueado.getNombre() + " " + administradorLogueado.getApellido());
         permisoRepository.save(permiso);
     }
 
@@ -67,21 +72,20 @@ public class PermisoService {
     }
 
     @Transactional
-    public Optional<Permiso> aprobar(Long id) {
-        return permisoRepository.findById(id)
-                .map(permiso -> {
-                    permiso.setEstado(EstadoSolicitud.APROBADO);
-                    return permisoRepository.save(permiso);
-                });
-    }
+    public void rechazarPermiso(Long permisoId, Empleado administradorLogueado) {
+        Permiso permiso = permisoRepository.findById(permisoId)
+                .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
 
-    @Transactional
-    public Optional<Permiso> rechazar(Long id) {
-        return permisoRepository.findById(id)
-                .map(permiso -> {
-                    permiso.setEstado(EstadoSolicitud.RECHAZADO);
-                    return permisoRepository.save(permiso);
-                });
+        // VALIDACIÓN DE SEGURIDAD
+        if (permiso.getEmpleado().getId().equals(administradorLogueado.getId())) {
+            throw new RuntimeException("Seguridad: No puedes rechazar tu propia solicitud. Debe gestionarla otro colega de RRHH.");
+        }
+
+        permiso.setEstado(EstadoSolicitud.RECHAZADO);
+        // Opcional: puedes guardar quién lo rechazó si tienes el campo
+        // permiso.setRechazadoPor(administradorLogueado.getNombre() + " " + administradorLogueado.getApellido());
+
+        permisoRepository.save(permiso);
     }
 
     @Transactional
