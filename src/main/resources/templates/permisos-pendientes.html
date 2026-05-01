@@ -378,44 +378,44 @@
     }
 
     // Aprobar permiso
-    function aprobarPermiso() {
-        if (!permisoActual) return;
+function aprobarPermiso() {
+    if (!permisoActual) return;
+    if (!confirm(`¿Aprobar permiso de ${permisoActual.empleado.nombre}?`)) return;
 
-        if (!confirm(`¿Aprobar permiso de ${permisoActual.empleado.nombre}?`)) return;
+    fetch(`/api/permisos/${permisoActual.id}/aprobar`, { method: 'PUT' })
+    .then(response => {
+        if (!response.ok) return response.text().then(text => { throw new Error(text) });
+        return response.json();
+    })
+    .then(data => {
+        modalDetalle.hide();
+        mostrarAlerta(`✅ Permiso aprobado para ${data.empleado.nombre}`, 'success');
+        cargarPermisos();
+    })
+    .catch(error => {
+        mostrarAlerta(error.message, 'danger');
+    });
+}
 
-        fetch(`/api/permisos/${permisoActual.id}/aprobar`, {
-            method: 'PUT'
-        })
-        .then(response => response.json())
-        .then(data => {
-            modalDetalle.hide();
-            mostrarAlerta(`✅ Permiso aprobado para ${data.empleado.nombre} ${data.empleado.apellido}`, 'success');
-            cargarPermisos();
-        })
-        .catch(error => {
-            mostrarAlerta('Error al aprobar permiso', 'danger');
-        });
-    }
+// Rechazar permiso
+function rechazarPermiso() {
+    if (!permisoActual) return;
+    if (!confirm(`¿Rechazar permiso de ${permisoActual.empleado.nombre}?`)) return;
 
-    // Rechazar permiso
-    function rechazarPermiso() {
-        if (!permisoActual) return;
-
-        if (!confirm(`¿Rechazar permiso de ${permisoActual.empleado.nombre}?`)) return;
-
-        fetch(`/api/permisos/${permisoActual.id}/rechazar`, {
-            method: 'PUT'
-        })
-        .then(response => response.json())
-        .then(data => {
-            modalDetalle.hide();
-            mostrarAlerta(`❌ Permiso rechazado para ${data.empleado.nombre} ${data.empleado.apellido}`, 'warning');
-            cargarPermisos();
-        })
-        .catch(error => {
-            mostrarAlerta('Error al rechazar permiso', 'danger');
-        });
-    }
+    fetch(`/api/permisos/${permisoActual.id}/rechazar`, { method: 'PUT' })
+    .then(response => {
+        if (!response.ok) return response.text().then(text => { throw new Error(text) });
+        return response.json();
+    })
+    .then(data => {
+        modalDetalle.hide();
+        mostrarAlerta(`❌ Permiso rechazado para ${data.empleado.nombre}`, 'warning');
+        cargarPermisos();
+    })
+    .catch(error => {
+        mostrarAlerta(error.message, 'danger');
+    });
+}
 
     // Aprobar rápido
     function aprobarRapido(id) {
