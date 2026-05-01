@@ -445,44 +445,44 @@
   }
 
   // Aprobar vacaciones
-  function aprobarVacaciones() {
-      if (!vacacionActual) return;
+function aprobarVacaciones() {
+    if (!vacacionActual) return;
+    if (!confirm(`¿Aprobar ${vacacionActual.diasSolicitados} días para ${vacacionActual.empleado.nombre}?`)) return;
 
-      if (!confirm(`¿Aprobar ${vacacionActual.diasSolicitados} días de vacaciones para ${vacacionActual.empleado.nombre}?`)) return;
+    fetch(`/api/vacaciones/${vacacionActual.id}/aprobar`, { method: 'PUT' })
+    .then(response => {
+        if (!response.ok) return response.text().then(text => { throw new Error(text) });
+        return response.json();
+    })
+    .then(data => {
+        modalDetalle.hide();
+        mostrarAlerta(`✅ Vacaciones aprobadas para ${data.empleado.nombre}`, 'success');
+        cargarVacaciones();
+    })
+    .catch(error => {
+        mostrarAlerta(error.message, 'danger');
+    });
+}
 
-      fetch(`/api/vacaciones/${vacacionActual.id}/aprobar`, {
-          method: 'PUT'
-      })
-      .then(response => response.json())
-      .then(data => {
-          modalDetalle.hide();
-          mostrarAlerta(`✅ Vacaciones aprobadas para ${data.empleado.nombre} ${data.empleado.apellido}`, 'success');
-          cargarVacaciones();
-      })
-      .catch(error => {
-          mostrarAlerta('Error al aprobar vacaciones', 'danger');
-      });
-  }
+// Rechazar vacaciones
+function rechazarVacaciones() {
+    if (!vacacionActual) return;
+    if (!confirm(`¿Rechazar vacaciones de ${vacacionActual.empleado.nombre}?`)) return;
 
-  // Rechazar vacaciones
-  function rechazarVacaciones() {
-      if (!vacacionActual) return;
-
-      if (!confirm(`¿Rechazar vacaciones de ${vacacionActual.empleado.nombre}?`)) return;
-
-      fetch(`/api/vacaciones/${vacacionActual.id}/rechazar`, {
-          method: 'PUT'
-      })
-      .then(response => response.json())
-      .then(data => {
-          modalDetalle.hide();
-          mostrarAlerta(`❌ Vacaciones rechazadas para ${data.empleado.nombre} ${data.empleado.apellido}`, 'warning');
-          cargarVacaciones();
-      })
-      .catch(error => {
-          mostrarAlerta('Error al rechazar vacaciones', 'danger');
-      });
-  }
+    fetch(`/api/vacaciones/${vacacionActual.id}/rechazar`, { method: 'PUT' })
+    .then(response => {
+        if (!response.ok) return response.text().then(text => { throw new Error(text) });
+        return response.json();
+    })
+    .then(data => {
+        modalDetalle.hide();
+        mostrarAlerta(`❌ Vacaciones rechazadas para ${data.empleado.nombre}`, 'warning');
+        cargarVacaciones();
+    })
+    .catch(error => {
+        mostrarAlerta(error.message, 'danger');
+    });
+}
 
   // Aprobar rápido
   function aprobarRapido(id) {
