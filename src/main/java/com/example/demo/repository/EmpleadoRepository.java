@@ -1,14 +1,18 @@
 package com.example.demo.repository;
 
 import com.example.demo.model.Empleado;
+import com.example.demo.model.Rol;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     Optional<Empleado> findByPin(String pin);
+
+    List<Empleado> findByRol(Rol rol);
 
     Optional<Empleado> findByDocumento(String documento);
 
