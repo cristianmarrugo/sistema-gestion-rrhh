@@ -60,6 +60,14 @@
               <p class="info-label mb-1">Direccion de residencia</p>
               <p class="fw-bold text-dark" th:text="${empleado.direccion ?: 'No registrado'}">...</p>
             </div>
+            <div class="alert" th:classappend="${enVacaciones} ? 'alert-info' : 'alert-success'">
+    <span th:if="${enVacaciones}">
+        🌴 <strong>Estado:</strong> Actualmente te encuentras en periodo de vacaciones.
+    </span>
+              <span th:if="${!enVacaciones}">
+        💼 <strong>Estado:</strong> Activo / Trabajando.
+    </span>
+            </div>
           </div>
 
           <hr class="my-4 text-muted opacity-25">
