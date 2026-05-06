@@ -1,9 +1,7 @@
 package com.example.demo.service;
 
-import com.example.demo.model.Empleado;
-import com.example.demo.model.EstadoSolicitud;
-import com.example.demo.model.Permiso;
-import com.example.demo.model.Vacacion;
+import com.example.demo.model.*;
+import com.example.demo.repository.EmpleadoRepository;
 import com.example.demo.repository.VacacionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -23,6 +21,10 @@ import java.util.Optional;
 public class VacacionService {
 
     private final VacacionRepository vacacionRepository;
+
+    private final NotificacionService notificacionService;
+
+    private final EmpleadoRepository empleadoRepository;
 
     /**
      * Verificar si tiene vacaciones activas hoy
@@ -93,7 +95,30 @@ public class VacacionService {
         nuevaVacacion.setDiasSolicitados(vacacion.getDiasSolicitados());
         nuevaVacacion.setEstado(EstadoSolicitud.PENDIENTE);
 
+        List<Empleado> rrhhList = empleadoRepository.findByRol(Rol.RRHH);
+        for (Empleado admin : rrhhList) {
+            notificacionService.crear(admin, "Nueva solicitud de vacaciones de " + empleado.getNombre(), "/vacaciones/pendientes");
+        }
+
         return vacacionRepository.save(nuevaVacacion);
+    }
+
+    @Transactional
+    public void verificarRegresoVacaciones(Empleado emp) {
+        LocalDate hoy = LocalDate.now();
+        LocalDate ayer = hoy.minusDays(1);
+
+        // Buscamos si tuvo una vacación que terminó ayer
+        vacacionRepository.findByEmpleadoAndFechaFin(emp, ayer)
+                .stream()
+                .filter(v -> v.getEstado() == EstadoSolicitud.APROBADO)
+                .findFirst()
+                .ifPresent(v -> {
+                    String mensaje = "👋 ¡Bienvenido de nuevo! Tu periodo de vacaciones finalizó ayer.";
+                    // Solo creamos la notificación si no le hemos dado la bienvenida hoy
+                    // (Esto evita spam de notificaciones)
+                    notificacionService.crear(emp, mensaje, "/empleado/perfil");
+                });
     }
 
     /**
@@ -146,6 +171,12 @@ public class VacacionService {
         }
 
         vacacion.setEstado(EstadoSolicitud.APROBADO);
+
+        notificacionService.crear(
+                vacacion.getEmpleado(),
+                "Tus vacaciones han sido APROBADAS",
+                "/vacaciones"
+        );
         return vacacionRepository.save(vacacion);
     }
 
@@ -167,7 +198,14 @@ public class VacacionService {
         }
 
         vacacion.setEstado(EstadoSolicitud.RECHAZADO);
+        notificacionService.crear(
+                vacacion.getEmpleado(),
+                "❌ Tu solicitud de vacaciones ha sido RECHAZADA.",
+                "/vacaciones"
+        );
         return vacacionRepository.save(vacacion);
+
+
     }
 
     /**
