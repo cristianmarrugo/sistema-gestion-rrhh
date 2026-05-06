@@ -1,9 +1,13 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Empleado;
+import com.example.demo.repository.VacacionRepository;
 import com.example.demo.service.EmpleadoService;
+import com.example.demo.service.NotificacionService;
+import com.example.demo.service.VacacionService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,15 +21,36 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class PerfilController {
 
+    @Autowired
     private final EmpleadoService empleadoService;
+
+    @Autowired
+    private final VacacionRepository vacacionRepository;
+
+    @Autowired
+    private final VacacionService vacacionService;
+
+    @Autowired
+    private final NotificacionService notificacionService;
 
     @GetMapping("/mi-perfil")
     public String verMiPerfil(HttpSession session, Model model) {
         Empleado empleado = (Empleado) session.getAttribute("empleado");
+        if (empleado != null) {
+            // Verificamos si regresó de vacaciones para avisarle
+            vacacionService.verificarRegresoVacaciones(empleado);
+        }
 
         if (empleado == null) {
             return "redirect:/login";
         }
+
+        vacacionService.verificarRegresoVacaciones(empleado);
+
+        // En el método que carga el perfil
+        LocalDate hoy = LocalDate.now();
+        boolean estaDeVacaciones = vacacionRepository.existsVacacionActiva(empleado, hoy);
+        model.addAttribute("enVacaciones", estaDeVacaciones);
 
         // Recargar desde BD para tener datos actualizados
         empleado = empleadoService.obtenerPorId(empleado.getId()).orElse(empleado);
