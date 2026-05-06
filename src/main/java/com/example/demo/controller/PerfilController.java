@@ -36,11 +36,6 @@ public class PerfilController {
     @GetMapping("/mi-perfil")
     public String verMiPerfil(HttpSession session, Model model) {
         Empleado empleado = (Empleado) session.getAttribute("empleado");
-        if (empleado != null) {
-            // Verificamos si regresó de vacaciones para avisarle
-            vacacionService.verificarRegresoVacaciones(empleado);
-        }
-
         if (empleado == null) {
             return "redirect:/login";
         }
