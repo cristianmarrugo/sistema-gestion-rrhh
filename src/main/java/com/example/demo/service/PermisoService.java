@@ -3,6 +3,8 @@ package com.example.demo.service;
 import com.example.demo.model.Empleado;
 import com.example.demo.model.EstadoSolicitud;
 import com.example.demo.model.Permiso;
+import com.example.demo.model.Rol;
+import com.example.demo.repository.EmpleadoRepository;
 import com.example.demo.repository.PermisoRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -10,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.AuditReaderFactory;
 import org.hibernate.envers.query.AuditEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +24,14 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class PermisoService {
 
+    @Autowired
     private final PermisoRepository permisoRepository;
+
+    @Autowired
+    private final NotificacionService notificacionService;
+
+    @Autowired
+    private final EmpleadoRepository empleadoRepository;
 
     public boolean tienePermisoHoy(Empleado empleado) {
         return permisoRepository.existsPermisoActivo(
@@ -39,6 +49,11 @@ public class PermisoService {
             throw new RuntimeException("Seguridad: No puedes aprobar tu propia solicitud de permiso. Debe hacerlo otro empleado de recursos humanos.");
         }
 
+        notificacionService.crear(
+                permiso.getEmpleado(),
+                "✅ Tu solicitud de permiso ha sido APROBADA por " + administradorLogueado.getNombre(),
+                "/permisos"
+        );
         // Al cambiar estos valores, Envers creará un nuevo registro en la tabla _AUD
         permiso.setEstado(EstadoSolicitud.APROBADO);
         permiso.setAprobadoPor(nombreAdmin);
@@ -68,6 +83,15 @@ public class PermisoService {
     public Permiso solicitar(Permiso permiso, Empleado empleado) {
         permiso.setEmpleado(empleado);
         permiso.setEstado(EstadoSolicitud.PENDIENTE);
+        List<Empleado> rrhh = empleadoRepository.findByRol(Rol.RRHH);
+
+        for (Empleado admin : rrhh) {
+            notificacionService.crear(
+                    admin,
+                    "📩 Nueva solicitud de permiso de " + empleado.getNombre(),
+                    "/permisos/pendientes"
+            );
+        }
         return permisoRepository.save(permiso);
     }
 
@@ -84,6 +108,12 @@ public class PermisoService {
         permiso.setEstado(EstadoSolicitud.RECHAZADO);
         // Opcional: puedes guardar quién lo rechazó si tienes el campo
         // permiso.setRechazadoPor(administradorLogueado.getNombre() + " " + administradorLogueado.getApellido());
+
+        notificacionService.crear(
+                permiso.getEmpleado(),
+                "❌ Tu solicitud de permiso ha sido RECHAZADA.",
+                "/permisos"
+        );
 
         permisoRepository.save(permiso);
     }
