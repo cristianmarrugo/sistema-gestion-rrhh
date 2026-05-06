@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface VacacionRepository extends JpaRepository<Vacacion, Long> {
     @Query("""
@@ -19,5 +20,8 @@ boolean existsVacacionActiva(Empleado empleado, LocalDate fecha);
 
     @Query("SELECT COUNT(v) FROM Vacacion v WHERE v.estado = 'APROBADO' AND :fecha BETWEEN v.fechaInicio AND v.fechaFin")
     long countVacacionesActivas(LocalDate fecha);
+
+
+    List<Vacacion> findByEmpleadoAndFechaFin(Empleado empleado, LocalDate fechaFin);
 
 }
