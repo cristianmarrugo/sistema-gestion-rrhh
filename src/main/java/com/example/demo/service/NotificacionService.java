@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -23,6 +24,7 @@ public class NotificacionService {
 
         n.setMensaje(mensaje);
         n.setUrl(url);
+        n.setFechaCreacion(LocalDateTime.now());
         repository.save(n);
     }
 
