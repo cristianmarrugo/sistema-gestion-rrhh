@@ -377,75 +377,119 @@
         modalDetalle.show();
     }
 
-    // Aprobar permiso
-function aprobarPermiso() {
+// Aprobar permiso
+async function aprobarPermiso() {
     if (!permisoActual) return;
     if (!confirm(`¿Aprobar permiso de ${permisoActual.empleado.nombre}?`)) return;
 
-    fetch(`/api/permisos/${permisoActual.id}/aprobar`, { method: 'PUT' })
-    .then(response => {
-        if (!response.ok) return response.text().then(text => { throw new Error(text) });
-        return response.json();
-    })
-    .then(data => {
+    try {
+        const response = await fetch(`/api/permisos/${permisoActual.id}/aprobar`, {
+            method: 'PUT'
+        });
+
+        // Leemos como texto siempre, así evitamos el error del JSON vacío
+        const resultado = await response.text();
+
+        if (!response.ok) {
+            // Si el Java lanzó un error de seguridad, aquí se mostrará
+            throw new Error(resultado || "Error de seguridad o servidor");
+        }
+
+        // ÉXITO
         modalDetalle.hide();
-        mostrarAlerta(`✅ Permiso aprobado para ${data.empleado.nombre}`, 'success');
+        mostrarAlerta(`✅ Permiso aprobado para ${permisoActual.empleado.nombre}`, 'success');
         cargarPermisos();
-    })
-    .catch(error => {
+
+    } catch (error) {
+        console.error("Error en fetch:", error);
         mostrarAlerta(error.message, 'danger');
-    });
+    }
 }
 
 // Rechazar permiso
-function rechazarPermiso() {
+async function rechazarPermiso() {
     if (!permisoActual) return;
     if (!confirm(`¿Rechazar permiso de ${permisoActual.empleado.nombre}?`)) return;
 
-    fetch(`/api/permisos/${permisoActual.id}/rechazar`, { method: 'PUT' })
-    .then(response => {
-        if (!response.ok) return response.text().then(text => { throw new Error(text) });
-        return response.json();
-    })
-    .then(data => {
+    try {
+        const response = await fetch(`/api/permisos/${permisoActual.id}/rechazar`, {
+            method: 'PUT'
+        });
+
+        const resultado = await response.text();
+
+        if (!response.ok) {
+            throw new Error(resultado || "Error al rechazar");
+        }
+
         modalDetalle.hide();
-        mostrarAlerta(`❌ Permiso rechazado para ${data.empleado.nombre}`, 'warning');
+        mostrarAlerta(`❌ Permiso rechazado para ${permisoActual.empleado.nombre}`, 'warning');
+        cargarPermisos();
+
+    } catch (error) {
+        console.error("Error en fetch:", error);
+        mostrarAlerta(error.message, 'danger');
+    }
+}
+
+    // Aprobar rápido
+function aprobarRapido(id) {
+    const permiso = todosLosPermisos.find(p => p.id === id);
+    if (!permiso || !confirm(`¿Aprobar permiso de ${permiso.empleado.nombre}?`)) return;
+
+    fetch(`/api/permisos/${id}/aprobar`, {
+        method: 'PUT'
+    })
+    .then(async response => {
+        // 1. Leemos la respuesta como texto (así aceptamos "Seguridad..." o un JSON)
+        const mensajeServidor = await response.text();
+
+        // 2. Si hay un error (400 Bad Request), lanzamos el mensaje de Java al catch
+        if (!response.ok) {
+            throw new Error(mensajeServidor || 'Error al aprobar');
+        }
+
+        // 3. Si todo está bien, pasamos al siguiente .then
+        return mensajeServidor ? JSON.parse(mensajeServidor) : {};
+    })
+    .then(() => {
+        mostrarAlerta('✅ Permiso aprobado', 'success');
         cargarPermisos();
     })
     .catch(error => {
+        // AQUÍ es donde aparecerá el mensaje "Seguridad: No puedes aprobar..."
         mostrarAlerta(error.message, 'danger');
     });
 }
 
-    // Aprobar rápido
-    function aprobarRapido(id) {
-        const permiso = todosLosPermisos.find(p => p.id === id);
-        if (!permiso || !confirm(`¿Aprobar permiso de ${permiso.empleado.nombre}?`)) return;
-
-        fetch(`/api/permisos/${id}/aprobar`, {
-            method: 'PUT'
-        })
-        .then(response => response.json())
-        .then(() => {
-            mostrarAlerta('✅ Permiso aprobado', 'success');
-            cargarPermisos();
-        });
-    }
-
-    // Rechazar rápido
     function rechazarRapido(id) {
-        const permiso = todosLosPermisos.find(p => p.id === id);
-        if (!permiso || !confirm(`¿Rechazar permiso de ${permiso.empleado.nombre}?`)) return;
+    const permiso = todosLosPermisos.find(p => p.id === id);
+    if (!permiso || !confirm(`¿Rechazar permiso de ${permiso.empleado.nombre}?`)) return;
 
-        fetch(`/api/permisos/${id}/rechazar`, {
-            method: 'PUT'
-        })
-        .then(response => response.json())
-        .then(() => {
-            mostrarAlerta('❌ Permiso rechazado', 'warning');
-            cargarPermisos();
-        });
-    }
+    fetch(`/api/permisos/${id}/rechazar`, {
+        method: 'PUT'
+    })
+    .then(async response => {
+        // Leemos el cuerpo como texto primero
+        const text = await response.text();
+
+        // Si no es una respuesta exitosa (ej. 400 o 500), lanzamos el error con el mensaje de Java
+        if (!response.ok) throw new Error(text || 'Error al rechazar el permiso');
+
+        // Si todo salió bien, no importa si el texto está vacío
+        return text ? JSON.parse(text) : {};
+    })
+    .then(() => {
+        // Ahora sí llegará aquí siempre que el servidor responda 200 OK
+        mostrarAlerta('❌ Permiso rechazado', 'warning');
+        cargarPermisos();
+    })
+    .catch(error => {
+        // Aquí capturamos errores de red o tus validaciones de seguridad de Java
+        console.error("Error:", error);
+        mostrarAlerta(error.message, 'danger');
+    });
+}
 
     // Filtrar permisos
     function filtrarPermisos() {
