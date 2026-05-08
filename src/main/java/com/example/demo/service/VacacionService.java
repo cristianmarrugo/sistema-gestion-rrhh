@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.model.*;
 import com.example.demo.repository.EmpleadoRepository;
+import com.example.demo.repository.PermisoRepository;
 import com.example.demo.repository.VacacionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.AuditReaderFactory;
 import org.hibernate.envers.query.AuditEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +22,17 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class VacacionService {
 
+    @Autowired
     private final VacacionRepository vacacionRepository;
 
+    @Autowired
     private final NotificacionService notificacionService;
 
+    @Autowired
     private final EmpleadoRepository empleadoRepository;
+
+    @Autowired
+    private final PermisoRepository permisoRepository;
 
     /**
      * Verificar si tiene vacaciones activas hoy
@@ -60,47 +68,57 @@ public class VacacionService {
      */
     @Transactional
     public Vacacion solicitarVacaciones(Empleado empleado, Vacacion vacacion) {
-        // Validar que no tenga otras vacaciones en las mismas fechas
+
+        LocalDate inicio = vacacion.getFechaInicio();
+        LocalDate fin = vacacion.getFechaFin();
+
+        // 1. Validar solapamiento (Mantenemos tu lógica)
         boolean tieneVacacionEnRango = vacacionRepository.findAll()
                 .stream()
                 .filter(v -> v.getEmpleado().getId().equals(empleado.getId()))
                 .filter(v -> v.getEstado() == EstadoSolicitud.APROBADO ||
                         v.getEstado() == EstadoSolicitud.PENDIENTE)
                 .anyMatch(v ->
-                        // Verificar si hay solapamiento de fechas
                         !(vacacion.getFechaFin().isBefore(v.getFechaInicio()) ||
                                 vacacion.getFechaInicio().isAfter(v.getFechaFin()))
                 );
 
         if (tieneVacacionEnRango) {
-            throw new RuntimeException(
-                    "Ya tienes vacaciones solicitadas o aprobadas en estas fechas"
-            );
+            throw new RuntimeException("Ya tienes vacaciones solicitadas o aprobadas en estas fechas");
         }
 
-        // Validar días disponibles
+        // 2. Validar cruce con permisos
+        boolean tienePermisoEnRango = permisoRepository.existeCruceDeFechas(empleado, inicio, fin);
+        if (tienePermisoEnRango) {
+            throw new RuntimeException("No puedes solicitar vacaciones en fechas donde ya tienes un permiso aprobado o pendiente.");
+        }
+
+        // 3. Validar días disponibles
         int disponibles = diasDisponibles(empleado);
         if (vacacion.getDiasSolicitados() > disponibles) {
-            throw new RuntimeException(
-                    "Solo tienes " + disponibles + " días disponibles. " +
-                            "Estás solicitando " + vacacion.getDiasSolicitados() + " días."
-            );
+            throw new RuntimeException("Solo tienes " + disponibles + " días disponibles.");
         }
 
-        // Crear nueva solicitud
+        // 4. Crear y configurar la nueva solicitud
         Vacacion nuevaVacacion = new Vacacion();
-        nuevaVacacion.setEmpleado(empleado);
-        nuevaVacacion.setFechaInicio(vacacion.getFechaInicio());
-        nuevaVacacion.setFechaFin(vacacion.getFechaFin());
+        nuevaVacacion.setEmpleado(empleado); // Usamos el 'empleado' que viene por parámetro
+        nuevaVacacion.setFechaInicio(inicio);
+        nuevaVacacion.setFechaFin(fin);
         nuevaVacacion.setDiasSolicitados(vacacion.getDiasSolicitados());
         nuevaVacacion.setEstado(EstadoSolicitud.PENDIENTE);
 
-        List<Empleado> rrhhList = empleadoRepository.findByRol(Rol.RRHH);
-        for (Empleado admin : rrhhList) {
-            notificacionService.crear(admin, "Nueva solicitud de vacaciones de " + empleado.getNombre(), "/vacaciones/pendientes");
-        }
+        // 5. PRIMERO GUARDAMOS
+        Vacacion guardada = vacacionRepository.save(nuevaVacacion);
 
-        return vacacionRepository.save(nuevaVacacion);
+        // 6. AHORA NOTIFICAMOS (Usando 'empleado' que NO es null)
+        // Cambiamos 'vacacion.getEmpleado()' por 'empleado'
+        notificacionService.notificarGestionadoresExcepto(
+                empleado,
+                "Nueva solicitud de vacaciones de " + empleado.getNombre(),
+                "/vacaciones/pendientes"
+        );
+
+        return guardada;
     }
 
     @Transactional
@@ -117,7 +135,7 @@ public class VacacionService {
                     String mensaje = "👋 ¡Bienvenido de nuevo! Tu periodo de vacaciones finalizó ayer.";
                     // Solo creamos la notificación si no le hemos dado la bienvenida hoy
                     // (Esto evita spam de notificaciones)
-                    notificacionService.crear(emp, mensaje, "/empleado/perfil");
+                    notificacionService.crear(emp, mensaje, "/mi-perfil");
                 });
     }
 
