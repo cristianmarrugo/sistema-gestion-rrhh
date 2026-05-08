@@ -43,18 +43,26 @@ public class PermisoController {
 
     // Solicitar permiso
     @PostMapping("/solicitar")
-    public ResponseEntity<Permiso> solicitar(
+    public ResponseEntity<?> solicitar(
             @RequestBody Permiso permiso,
             HttpSession session) {
+        try {
+            Empleado empleado = (Empleado) session.getAttribute("empleado");
 
-        Empleado empleado = (Empleado) session.getAttribute("empleado");
+            if (empleado == null) {
+                return ResponseEntity.status(401).build();
+            }
 
-        if (empleado == null) {
-            return ResponseEntity.status(401).build();
+            Permiso nuevo = permisoService.solicitar(permiso, empleado);
+
+            return ResponseEntity.ok(nuevo);
+
+        } catch (Exception e) {
+
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
 
-        Permiso nuevo = permisoService.solicitar(permiso, empleado);
-        return ResponseEntity.ok(nuevo);
+
     }
 
     // Aprobar permiso (ADMIN/RRHH)
