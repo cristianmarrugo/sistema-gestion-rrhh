@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Empleado;
+import com.example.demo.repository.PermisoRepository;
 import com.example.demo.repository.VacacionRepository;
 import com.example.demo.service.EmpleadoService;
 import com.example.demo.service.NotificacionService;
@@ -33,6 +34,9 @@ public class PerfilController {
     @Autowired
     private final NotificacionService notificacionService;
 
+    @Autowired
+    private final PermisoRepository permisoRepository;
+
     @GetMapping("/mi-perfil")
     public String verMiPerfil(HttpSession session, Model model) {
         Empleado empleado = (Empleado) session.getAttribute("empleado");
@@ -45,7 +49,10 @@ public class PerfilController {
         // En el método que carga el perfil
         LocalDate hoy = LocalDate.now();
         boolean estaDeVacaciones = vacacionRepository.existsVacacionActiva(empleado, hoy);
+        boolean tienePermisoHoy = permisoRepository.existsPermisoActivo(empleado, hoy);
+
         model.addAttribute("enVacaciones", estaDeVacaciones);
+        model.addAttribute("conPermiso", tienePermisoHoy);
 
         // Recargar desde BD para tener datos actualizados
         empleado = empleadoService.obtenerPorId(empleado.getId()).orElse(empleado);
