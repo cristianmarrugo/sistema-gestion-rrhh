@@ -40,31 +40,35 @@ public class EmpleadoController {
             @RequestBody Empleado empleado,
             HttpSession session) {
 
-        Empleado usuarioLogueado = (Empleado) session.getAttribute("empleado");
+        try {
+            Empleado usuarioLogueado = (Empleado) session.getAttribute("empleado");
 
-        if (usuarioLogueado == null) {
-            return ResponseEntity.status(401).body("No autenticado");
+            if (usuarioLogueado == null) {
+                return ResponseEntity.status(401).body("No autenticado");
+            }
+
+            // VALIDAR PERMISOS
+            // Solo ADMIN puede crear empleados con rol ADMIN
+            if (empleado.getRol() == Rol.ADMIN && usuarioLogueado.getRol() != Rol.ADMIN) {
+                return ResponseEntity.status(403).body("Solo ADMIN puede crear usuarios ADMIN");
+            }
+
+            auditoriaService.registrar(
+                    "EMPLEADO",
+                    empleado.getId(),
+                    "CREACIÓN",
+                    String.format("Se registró al nuevo empleado: %s %s con cargo %s",
+                            empleado.getNombre(),
+                            empleado.getApellido(),
+                            empleado.getCargo().getNombre()),
+                    usuarioLogueado
+            );
+
+            Empleado nuevo = empleadoService.crear(empleado);
+            return ResponseEntity.ok(nuevo);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-
-        // VALIDAR PERMISOS
-        // Solo ADMIN puede crear empleados con rol ADMIN
-        if (empleado.getRol() == Rol.ADMIN && usuarioLogueado.getRol() != Rol.ADMIN) {
-            return ResponseEntity.status(403).body("Solo ADMIN puede crear usuarios ADMIN");
-        }
-
-        auditoriaService.registrar(
-                "EMPLEADO",
-                empleado.getId(),
-                "CREACIÓN",
-                String.format("Se registró al nuevo empleado: %s %s con cargo %s",
-                        empleado.getNombre(),
-                        empleado.getApellido(),
-                        empleado.getCargo().getNombre()),
-                usuarioLogueado
-        );
-
-        Empleado nuevo = empleadoService.crear(empleado);
-        return ResponseEntity.ok(nuevo);
     }
 
     // Actualizar empleado existente
