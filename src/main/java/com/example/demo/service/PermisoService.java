@@ -6,6 +6,7 @@ import com.example.demo.model.Permiso;
 import com.example.demo.model.Rol;
 import com.example.demo.repository.EmpleadoRepository;
 import com.example.demo.repository.PermisoRepository;
+import com.example.demo.repository.VacacionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,9 @@ public class PermisoService {
 
     @Autowired
     private final EmpleadoRepository empleadoRepository;
+
+    @Autowired
+    private final VacacionRepository vacacionRepository;
 
     public boolean tienePermisoHoy(Empleado empleado) {
         return permisoRepository.existsPermisoActivo(
@@ -81,17 +85,39 @@ public class PermisoService {
 
     @Transactional
     public Permiso solicitar(Permiso permiso, Empleado empleado) {
+        LocalDate inicio = permiso.getFechaInicio();
+        LocalDate fin = permiso.getFechaFin();
+
         permiso.setEmpleado(empleado);
         permiso.setEstado(EstadoSolicitud.PENDIENTE);
         List<Empleado> rrhh = empleadoRepository.findByRol(Rol.RRHH);
 
-        for (Empleado admin : rrhh) {
-            notificacionService.crear(
-                    admin,
-                    "📩 Nueva solicitud de permiso de " + empleado.getNombre(),
-                    "/permisos/pendientes"
-            );
+        if (permiso.getFechaFin().isBefore(permiso.getFechaInicio())) {
+            throw new RuntimeException("La fecha de fin no puede ser anterior a la de inicio.");
         }
+
+        // 2. VALIDACIÓN CRÍTICA: Evitar duplicados o cruces
+        boolean yaTienePermiso = permisoRepository.existeCruceDeFechas(
+                permiso.getEmpleado(),
+                permiso.getFechaInicio(),
+                permiso.getFechaFin()
+        );
+
+        if (yaTienePermiso) {
+            throw new RuntimeException("Ya tienes un permiso activo o pendiente para esas fechas.");
+        }
+
+        boolean estaDeVacaciones = vacacionRepository.existsVacacionAprobadaEnRango(empleado, inicio, fin);
+
+        if (estaDeVacaciones) {
+            throw new RuntimeException("No puedes solicitar permisos mientras estás en periodo de vacaciones.");
+        }
+
+        String mensaje = "Nueva solicitud de permiso de: " + permiso.getEmpleado().getNombre();
+        String url = "/permisos/pendientes"; // O la ruta que uses
+
+        // Usamos el nuevo método que filtra al autor
+        notificacionService.notificarGestionadoresExcepto(permiso.getEmpleado(), mensaje, url);
         return permisoRepository.save(permiso);
     }
 
