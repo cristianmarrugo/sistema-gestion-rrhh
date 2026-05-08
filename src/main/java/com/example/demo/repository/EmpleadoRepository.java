@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,6 +14,8 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     Optional<Empleado> findByPin(String pin);
 
     List<Empleado> findByRol(Rol rol);
+
+    List<Empleado> findByRolIn(Collection<Rol> roles);
 
     Optional<Empleado> findByDocumento(String documento);
 
