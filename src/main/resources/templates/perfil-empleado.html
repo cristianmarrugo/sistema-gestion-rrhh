@@ -60,12 +60,19 @@
               <p class="info-label mb-1">Direccion de residencia</p>
               <p class="fw-bold text-dark" th:text="${empleado.direccion ?: 'No registrado'}">...</p>
             </div>
-            <div class="alert" th:classappend="${enVacaciones} ? 'alert-info' : 'alert-success'">
-    <span th:if="${enVacaciones}">
-        🌴 <strong>Estado:</strong> Actualmente te encuentras en periodo de vacaciones.
+            <div class="mb-3">
+              <label class="form-label d-block">Estado Actual:</label>
+
+              <span th:if="${conPermiso}" class="badge bg-warning text-dark p-2">
+        <i class="bi bi-clock-history"></i> CON PERMISO ACTIVO
     </span>
-              <span th:if="${!enVacaciones}">
-        💼 <strong>Estado:</strong> Activo / Trabajando.
+
+              <span th:if="${enVacaciones && !conPermiso}" class="badge bg-info text-dark p-2">
+        <i class="bi bi-sun"></i> EN VACACIONES
+    </span>
+
+              <span th:if="${!enVacaciones && !conPermiso}" class="badge bg-success p-2">
+        <i class="bi bi-check-circle"></i> ACTIVO / TRABAJANDO
     </span>
             </div>
           </div>
