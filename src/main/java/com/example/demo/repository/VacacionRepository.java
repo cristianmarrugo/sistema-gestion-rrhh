@@ -4,6 +4,7 @@ import com.example.demo.model.Empleado;
 import com.example.demo.model.Vacacion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -23,5 +24,14 @@ boolean existsVacacionActiva(Empleado empleado, LocalDate fecha);
 
 
     List<Vacacion> findByEmpleadoAndFechaFin(Empleado empleado, LocalDate fechaFin);
+
+    @Query("SELECT COUNT(v) > 0 FROM Vacacion v WHERE v.empleado = :emp " +
+            "AND v.estado = 'APROBADO' " +
+            "AND ((:inicio BETWEEN v.fechaInicio AND v.fechaFin) " +
+            "OR (:fin BETWEEN v.fechaInicio AND v.fechaFin) " +
+            "OR (v.fechaInicio BETWEEN :inicio AND :fin))")
+    boolean existsVacacionAprobadaEnRango(@Param("emp") Empleado emp,
+                                          @Param("inicio") LocalDate inicio,
+                                          @Param("fin") LocalDate fin);
 
 }
