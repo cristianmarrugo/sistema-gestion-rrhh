@@ -1,6 +1,7 @@
 package com.example.demo.repository;
 
 import com.example.demo.model.Empleado;
+import com.example.demo.model.EstadoSolicitud;
 import com.example.demo.model.Permiso;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -30,4 +31,8 @@ public interface PermisoRepository extends JpaRepository<Permiso, Long> {
     boolean existeCruceDeFechas(@Param("emp") Empleado emp,
                                 @Param("inicio") LocalDate inicio,
                                 @Param("fin") LocalDate fin);
+
+
+    // Spring Data JPA lo genera automáticamente por el nombre
+    boolean existsByEmpleadoAndEstado(Empleado empleado, EstadoSolicitud estado);
 }
