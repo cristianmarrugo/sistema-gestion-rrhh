@@ -77,10 +77,18 @@
             <a href="/api/nomina/exportar"><i class="fas fa-file-csv"></i> Exportar Nómina</a>
             <a href="/dashboard-powerbi" th:if="${empleado.rol.toString() == 'RRHH'}"><i class="fas fa-chart-pie"></i> Análisis Power BI</a>
 
-            <li class="nav-item" th:if="${empleado.rol.toString() == 'ADMIN'}">
+            <!--<li class="nav-item" th:if="${empleado.rol.toString() == 'ADMIN'}">
                 <a class="nav-link" th:href="@{/prediccion}">
                     <i class="fas fa-brain"></i>
                     <span>Modulo predictivo</span>
+                </a>
+            </li>
+            -->
+
+            <li class="nav-item" th:if="${empleado.rol.toString() == 'ADMIN'}">
+                <a class="nav-link" th:href="@{/ia-prediccion}">
+                    <i class="fas fa-brain"></i>
+                    <span>Red neuronal con ia</span>
                 </a>
             </li>
         </div>
