@@ -1,0 +1,219 @@
+@relation datos_asistencia
+
+@attribute dia_semana numeric
+@attribute minutos_retraso numeric
+@attribute referencia_ubicacion {'Boquilla carrera 9','Boquilla carrera 9 # 53-29',Boquilla,'Santa maria','Villa grande','DIAGONAL 21 E 54 44, CARTAGENA, BOLIVAR                                         ',Boquila}
+@attribute resultado {TARDE, PUNTUAL}
+
+@data
+2,490,'Boquilla carrera 9',TARDE
+3,251,'Boquilla carrera 9 # 53-29',TARDE
+3,250,'Boquilla carrera 9 # 53-29',TARDE
+6,288,'Boquilla carrera 9 # 53-29',TARDE
+5,248,'Boquilla carrera 9 # 53-29',TARDE
+6,320,'Boquilla carrera 9 # 53-29',TARDE
+6,319,'Boquilla carrera 9 # 53-29',TARDE
+5,257,'Boquilla carrera 9 # 53-29',TARDE
+5,256,'Boquilla carrera 9 # 53-29',TARDE
+4,196,'Boquilla carrera 9 # 53-29',TARDE
+4,193,'Boquilla carrera 9 # 53-29',TARDE
+3,231,'Boquilla carrera 9 # 53-29',TARDE
+3,231,'Boquilla carrera 9 # 53-29',TARDE
+2,307,'Boquilla carrera 9 # 53-29',TARDE
+2,306,'Boquilla carrera 9 # 53-29',TARDE
+6,171,'Boquilla carrera 9 # 53-29',TARDE
+5,329,'Boquilla carrera 9 # 53-29',TARDE
+2,297,'Boquilla carrera 9 # 53-29',TARDE
+6,294,'Boquilla carrera 9 # 53-29',TARDE
+6,294,'Boquilla carrera 9 # 53-29',TARDE
+5,205,'Boquilla carrera 9 # 53-29',TARDE
+5,204,'Boquilla carrera 9 # 53-29',TARDE
+4,488,'Boquilla carrera 9 # 53-29',TARDE
+4,368,'Boquilla carrera 9 # 53-29',TARDE
+1,616,'Boquilla carrera 9 # 53-29',TARDE
+1,134,'Boquilla carrera 9 # 53-29',TARDE
+3,18,Boquilla,PUNTUAL
+3,17,'Santa maria',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Villa grande',PUNTUAL
+3,17,'DIAGONAL 21 E 54 44, CARTAGENA, BOLIVAR                                         ',PUNTUAL
+6,189,Boquilla,TARDE
+6,189,'Boquilla carrera 9',TARDE
+6,188,'Boquilla carrera 9 # 53-29',TARDE
+6,188,'Villa grande',TARDE
+6,187,'Santa maria',TARDE
+6,183,'DIAGONAL 21 E 54 44, CARTAGENA, BOLIVAR                                         ',TARDE
+4,100,'Villa grande',TARDE
+2,17,'DIAGONAL 21 E 54 44, CARTAGENA, BOLIVAR                                         ',PUNTUAL
+2,17,'Santa maria',PUNTUAL
+2,-52,'Villa grande',PUNTUAL 
+6,-154,'Villa grande',PUNTUAL
+5,109,Boquilla,TARDE
+5,108,'Boquilla carrera 9 # 53-29',TARDE
+5,108,'DIAGONAL 21 E 54 44, CARTAGENA, BOLIVAR                                         ',TARDE
+5,107,'Santa maria',TARDE
+4,0,'Villa grande',PUNTUAL
+5,-10,'Santa maria',PUNTUAL
+6,49,Boquilla,TARDE
+6,49,'Santa maria',TARDE
+6,48,'DIAGONAL 21 E 54 44, CARTAGENA, BOLIVAR                                         ',TARDE
+6,-64,'Villa grande',PUNTUAL
+5,-153,'Villa grande',PUNTUAL
+4,8,'Villa grande',PUNTUAL
+2,38,'Boquilla carrera 9 # 53-29',TARDE
+2,38,Boquila,TARDE
+2,38,'Santa maria',TARDE
+2,38,'Villa grande',TARDE
+2,36,'Boquilla carrera 9',TARDE
+2,36,'DIAGONAL 21 E 54 44, CARTAGENA, BOLIVAR                                         ',TARDE
+2,36,'Boquilla carrera 9 # 53-29',TARDE
+5,-153,'Villa grande',PUNTUAL
+5,-153,'Villa grande',PUNTUAL
+5,-153,'Villa grande',PUNTUAL
+5,-153,'Villa grande',PUNTUAL
+5,-153,'Villa grande',PUNTUAL
+5,-153,'Villa grande',PUNTUAL
+5,-10,'Santa maria',PUNTUAL
+5,-10,'Santa maria',PUNTUAL
+5,-10,'Santa maria',PUNTUAL
+5,-10,'Santa maria',PUNTUAL
+5,-10,'Santa maria',PUNTUAL
+2,0,'Boquilla carrera 9',PUNTUAL
+2,0,'Boquilla carrera 9',PUNTUAL
+2,0,'Boquilla carrera 9',PUNTUAL
+2,0,'Boquilla carrera 9',PUNTUAL
+2,0,'Boquilla carrera 9',PUNTUAL
+2,0,'Boquilla carrera 9',PUNTUAL
+2, 10, 'Villa grande', PUNTUAL   
+2, 14, 'Villa grande', PUNTUAL   
+2, 16, 'Villa grande', TARDE     
+3, 5, 'Santa maria', PUNTUAL     
+6, 15, 'Boquilla', PUNTUAL       
+6, 20, 'Boquilla', TARDE
+6, 15, 'Boquilla', PUNTUAL       
+6, 15, 'Boquilla', PUNTUAL       
+6, 15, 'Boquilla', PUNTUAL   
+3,17,'Boquilla carrera 9',TARDE
+3,17,'Boquilla carrera 9',TARDE
+3,18,Boquilla,TARDE
+3,17,'Santa maria',TARDE
+3,17,'Boquilla carrera 9',TARDE
+3,17,'Villa grande',TARDE
+3,17,'DIAGONAL 21 E 54 44, CARTAGENA, BOLIVAR                                         ',TARDE
+2,17,'DIAGONAL 21 E 54 44, CARTAGENA, BOLIVAR                                         ',TARDE
+2,17,'Santa maria',TARDE
+3,16,'Santa maria',TARDE
+4,16,'Santa maria',TARDE
+5,16,'Santa maria',TARDE
+6,16,'Santa maria',TARDE
+2,16,'Santa maria',TARDE
+2,16,'Santa maria',TARDE
+2,16,'Santa maria',TARDE
+2,16,'Santa maria',TARDE
+2,16,'Santa maria',TARDE
+2, 15, 'Boquilla', TARDE   
+6, 15, 'Boquilla', TARDE   
+3, 5, 'Santa maria', TARDE     
+3, 5, 'Santa maria', PUNTUAL     
+2,15,'Villa grande',TARDE
+2,15,'Boquilla carrera 9',TARDE
+2,14,'Santa maria',TARDE
+2,10,'Villa grande',TARDE
+2,15,'Villa grande',TARDE
+2,15,'Boquilla carrera 9',TARDE
+2,14,'Santa maria',TARDE
+2,10,'Villa grande',TARDE
+3,15,'Villa grande',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+5,15,'Santa maria',PUNTUAL
+6,15,'Villa grande',PUNTUAL
+3,10,'Boquilla carrera 9',PUNTUAL
+5,12,'Santa maria',PUNTUAL
+3,15,'Villa grande',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+5,15,'Santa maria',PUNTUAL
+6,15,'Villa grande',PUNTUAL
+3,10,'Boquilla carrera 9',PUNTUAL
+5,12,'Santa maria',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+5,15,'Santa maria',PUNTUAL
+6,15,'Villa grande',PUNTUAL
+3,10,'Boquilla carrera 9',PUNTUAL
+5,12,'Santa maria',PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+3,18,Boquilla,PUNTUAL
+2,0,'Boquilla carrera 9',PUNTUAL
+2,0,'Boquilla carrera 9',PUNTUAL
+2,0,'Boquilla carrera 9',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+4,15,'Boquilla',PUNTUAL
+6,-154,'Villa grande',PUNTUAL
+6,-154,'Villa grande',PUNTUAL
+6,-154,'Villa grande',PUNTUAL
+4,0,'Villa grande',PUNTUAL
+4,0,'Villa grande',PUNTUAL
+4,0,'Villa grande',PUNTUAL
+4,0,'Villa grande',PUNTUAL
+5,-10,'Santa maria',PUNTUAL
+5,-10,'Santa maria',PUNTUAL
+5,-10,'Santa maria',PUNTUAL
+5,-10,'Santa maria',PUNTUAL
+3, 5, 'Santa maria', PUNTUAL
+3, 5, 'Santa maria', PUNTUAL
+3, 5, 'Santa maria', PUNTUAL
+3, 5, 'Santa maria', PUNTUAL
+3, 5, 'Santa maria', PUNTUAL
+3, 5, 'Santa maria', PUNTUAL
+3, 5, 'Santa maria', PUNTUAL
+3, 5, 'Santa maria', PUNTUAL
+3, 5, 'Santa maria', PUNTUAL
+3, 5, 'Santa maria', PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
+3,17,'Boquilla carrera 9',PUNTUAL
