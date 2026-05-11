@@ -1,9 +1,7 @@
 package com.example.demo.service;
 
-import com.example.demo.model.Empleado;
-import com.example.demo.model.EstadoSolicitud;
-import com.example.demo.model.Permiso;
-import com.example.demo.model.Rol;
+import com.example.demo.model.*;
+import com.example.demo.repository.AsignacionTurnoRepository;
 import com.example.demo.repository.EmpleadoRepository;
 import com.example.demo.repository.PermisoRepository;
 import com.example.demo.repository.VacacionRepository;
@@ -36,6 +34,9 @@ public class PermisoService {
 
     @Autowired
     private final VacacionRepository vacacionRepository;
+
+    @Autowired
+    private final AsignacionTurnoRepository asignacionTurnoRepository;
 
     public boolean tienePermisoHoy(Empleado empleado) {
         return permisoRepository.existsPermisoActivo(
@@ -105,6 +106,29 @@ public class PermisoService {
 
         if (yaTienePermiso) {
             throw new RuntimeException("Ya tienes un permiso activo o pendiente para esas fechas.");
+        }
+
+        boolean tienePendienteGlobal = permisoRepository.existsByEmpleadoAndEstado(empleado, EstadoSolicitud.PENDIENTE);
+        if (tienePendienteGlobal) {
+            throw new RuntimeException("No puedes realizar una nueva solicitud: Tienes un permiso anterior aún pendiente de revisión.");
+        }
+
+        while (!inicio.isAfter(fin)) {
+            Optional<AsignacionTurno> asignacionOpt = asignacionTurnoRepository.findByEmpleadoAndFecha(empleado, inicio);
+
+            if (asignacionOpt.isPresent()) {
+                TipoAsignacion tipo = asignacionOpt.get().getTipo();
+
+                // Si el día está marcado como LIBRE o VACACIONES en el turno, bloqueamos
+                if (tipo == TipoAsignacion.LIBRE) {
+                    throw new RuntimeException("El día " + inicio + " es tu día LIBRE. No es necesario pedir permiso.");
+                }
+            } else {
+                // Si ni siquiera hay registro de turno, también se asume que no debe trabajar
+                throw new RuntimeException("No tienes turno asignado para el día " + inicio + ".");
+            }
+
+            inicio = inicio.plusDays(1);
         }
 
         boolean estaDeVacaciones = vacacionRepository.existsVacacionAprobadaEnRango(empleado, inicio, fin);
