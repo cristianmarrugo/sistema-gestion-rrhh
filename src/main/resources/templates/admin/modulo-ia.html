@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Panel de Predicción IA - RRHH</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .ia-card { border-left: 5px solid #0d6efd; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .result-box { font-size: 1.25rem; font-weight: bold; padding: 15px; border-radius: 8px; }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card ia-card">
+                <div class="card-header bg-white">
+                    <h3 class="mb-0 text-primary">🧠 Análisis de Red Neuronal Artificial</h3>
+                    <p class="text-muted small">Predicción de Puntualidad basada en historial de asistencia</p>
+                    <div class="text-end">
+                        <a href="/index" class="btn btn-sm btn-light text-primary fw-bold mb-2">
+                            <i class="fas fa-home"></i> Inicio
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/ia-prediccion/analizar}" method="post" th:object="${analisis}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Día de la Semana</label>
+                                <select th:field="*{diaSemana}" class="form-select" required>
+                                    <option value="2">Lunes</option>
+                                    <option value="3">Martes</option>
+                                    <option value="4">Miércoles</option>
+                                    <option value="5">Jueves</option>
+                                    <option value="6">Viernes</option>
+                                    <option value="7">Sábado</option>
+                                    <option value="1">Domingo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Minutos de Retraso Esperados</label>
+                                <input type="number" th:field="*{minutosRetraso}" class="form-control" placeholder="Ej: 10" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Zona de Residencia (Ubicación)</label>
+                                <input type="text" th:field="*{referenciaUbicacion}" class="form-control" placeholder="Ej: Santa maria, Villagrande La boquilla..." required>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-primary px-4">Ejecutar Predicción</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div th:if="${analisis.resultadoPrediccion != null}" class="mt-4 pt-4 border-top">
+                        <h5 class="mb-3">Resultado del Análisis:</h5>
+                        <div th:classappend="${analisis.resultadoPrediccion == 'PUNTUAL'} ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'"
+                             class="result-box text-center">
+                            <span th:text="${analisis.resultadoPrediccion}">ESTADO</span>
+                        </div>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">Nivel de confianza: <span th:text="${analisis.probabilidad}">0</span>%</small>
+                        </div>
+                        <p class="small text-muted mt-2">
+                            *Este resultado es generado por un modelo de Perceptrón Multicapa con un 85% de precisión estimada.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
