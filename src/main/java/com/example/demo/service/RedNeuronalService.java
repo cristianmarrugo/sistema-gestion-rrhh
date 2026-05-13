@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -7,10 +8,13 @@ import java.io.InputStreamReader;
 
 @Service
 public class RedNeuronalService {
+
+    @Value("${PYTHON_EXE_PATH:./venv/Scripts/python.exe}")
+    private String pythonExe;
+
     public String ejecutarPrediccion(int dia, int minutos, String ubicacion) {
         try {
             // RUTA ABSOLUTA al intérprete de tu venv
-            String pythonExe = "C:\\Users\\crist\\Downloads\\gestion\\demo\\venv\\Scripts\\python.exe";
             // RUTA RELATIVA al script desde la raíz del proyecto
             String scriptPath = "src/scripts/python/retrasos.py";
 
