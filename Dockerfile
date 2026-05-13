@@ -20,7 +20,6 @@ COPY target/*.jar app.jar
 
 # 6. Copiar los scripts de python y el txt de entrenamiento
 COPY src/scripts/python /app/src/scripts/python
-COPY entrenamiento_tardanzas.txt /app/entrenamiento_tardanzas.txt
 
 # 7. Ejecutar la aplicación
 ENTRYPOINT ["java", "-jar", "app.jar"]
