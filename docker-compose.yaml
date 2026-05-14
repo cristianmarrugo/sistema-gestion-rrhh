@@ -6,23 +6,28 @@ services:
     container_name: mysql-container
     environment:
       - MYSQL_DATABASE=rrhh_db
-      - MYSQL_ROOT_PASSWORD=root123
-      - MYSQL_USER=admin
-      - MYSQL_PASSWORD=admin123
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
     ports:
-      - "3306:3306"
+      - "3307:3306"
 
   app:
     build: .
     container_name: spring-app
     ports:
       - "8080:8080"
+
+    restart: on-failure
     environment:
       # Aquí conectamos con los datos de arriba
       - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/rrhh_db?allowPublicKeyRetrieval=true&useSSL=false
-      - SPRING_DATASOURCE_USERNAME=admin
-      - SPRING_DATASOURCE_PASSWORD=admin123
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - PYTHON_EXE_PATH=/usr/bin/python3
+
+      - SPRING_AI_OPENAI_API_KEY=${SPRING_AI_OPENAI_API_KEY}
+
     depends_on:
       - db
