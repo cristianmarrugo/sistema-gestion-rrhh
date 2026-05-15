@@ -13,7 +13,7 @@ public class GestionApplication {
 	}
 
 //	# Este es el valor real que usará Docker
-//	SPRING_AI_OPENAI_API_KEY=
+//
 //
 //	LOCAL_DB_URL=jdbc:mysql://localhost:3307/rrhh_db?allowPublicKeyRetrieval=true&useSSL=false
 //	DB_USERNAME=admin
