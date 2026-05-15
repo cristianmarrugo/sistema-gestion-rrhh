@@ -4,7 +4,13 @@ services:
   db:
     image: mysql:8.0
     container_name: mysql-container
+    volumes:
+     # Este guarda tus cambios del día a día (lo que haces en la web)
+      - ./mysql_data:/var/lib/mysql
+      # Este le da los datos iniciales al profe (solo se usa la primera vez)
+      - ./msql_data/datos_iniciales.sql:/docker-entrypoint-initdb.d/1.sql
     environment:
+      - TZ=America/Bogota
       - MYSQL_DATABASE=rrhh_db
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
       - MYSQL_USER=${DB_USERNAME}
@@ -21,6 +27,7 @@ services:
     restart: on-failure
     environment:
       # Aquí conectamos con los datos de arriba
+      - TZ=America/Bogota
       - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/rrhh_db?allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
