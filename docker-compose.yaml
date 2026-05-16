@@ -19,7 +19,7 @@ services:
       - "3307:3306"
 
   app:
-    build: .
+    image: marrugocb/rrhh-app:v1
     container_name: spring-app
     ports:
       - "8080:8080"
