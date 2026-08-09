@@ -16,6 +16,7 @@ import java.io.IOException;
 @RestController
 @RequestMapping("/api/qr")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class QRController {
 
     private final QRService qrService;
