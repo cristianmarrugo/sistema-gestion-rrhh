@@ -13,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/permisos")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class PermisoController {
 
     private final PermisoService permisoService;
