@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   db:
     image: mysql:8.0
     container_name: mysql-container
     volumes:
-     # Este guarda tus cambios del día a día (lo que haces en la web)
+      # Este guarda tus cambios del día a día (lo que haces en la web)
       - ./mysql_data:/var/lib/mysql
       # Este le da los datos iniciales al profe (solo se usa la primera vez)
       - ./msql_data/datos_iniciales.sql:/docker-entrypoint-initdb.d/1.sql
@@ -17,14 +15,17 @@ services:
       - MYSQL_PASSWORD=${DB_PASSWORD}
     ports:
       - "3307:3306"
+    networks:
+      - rrhh-network
 
   app:
+    build: .
     image: marrugocb/rrhh-app:v1
     container_name: spring-app
     ports:
       - "8080:8080"
-
-    restart: on-failure
+    depends_on:
+      - db
     environment:
       # Aquí conectamos con los datos de arriba
       - TZ=America/Bogota
@@ -33,8 +34,17 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - PYTHON_EXE_PATH=/usr/bin/python3
-
       - SPRING_AI_OPENAI_API_KEY=${SPRING_AI_OPENAI_API_KEY}
+    networks:
+      - rrhh-network
 
-    depends_on:
-      - db
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-padmin" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+# 2. Creamos la red al final del archivo (Alineado perfectamente a la izquierda)
+networks:
+  rrhh-network:
+    driver: bridge
