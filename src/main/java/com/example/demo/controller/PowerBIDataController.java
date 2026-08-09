@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/powerbi")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class PowerBIDataController {
 
     private final AsistenciaService asistenciaService;
