@@ -10,10 +10,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,6 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/chatbot")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class ChatbotController {
 
     private final OpenAiChatModel chatModel; // Cambiamos ChatClient por el Model directo
